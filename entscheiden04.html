@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: Entscheidungen</title>
+    <style>
+        :root {
+            --primary-blue: #1976D2;
+            --success-green: #388E3C;
+            --error-red: #D32F2F;
+            --bg-color: #f5f7fa;
+            --card-white: #ffffff;
+            --text-main: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 500px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-blue);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .quiz-card {
+            background: var(--card-white);
+            padding: 40px 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .sentence {
+            font-size: 1.6rem;
+            line-height: 1.5;
+            margin-bottom: 40px;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .gap {
+            color: var(--primary-blue);
+            border-bottom: 2px solid var(--primary-blue);
+            min-width: 60px;
+            display: inline-block;
+            font-weight: bold;
+            padding: 0 5px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .choice-btn {
+            background-color: #fff;
+            border: 2px solid #edeff2;
+            color: var(--text-main);
+            padding: 20px 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        @media (hover: hover) {
+            .choice-btn:hover {
+                border-color: var(--primary-blue);
+                background-color: #f0f7ff;
+                transform: translateY(-2px);
+            }
+        }
+
+        .choice-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Overlay für Feedback */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .feedback-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .feedback-box h3 { margin-top: 0; }
+
+        .explanation {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin: 20px 0;
+            color: #555;
+        }
+
+        .next-btn {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .result-screen {
+            display: none;
+            text-align: center;
+            background: white;
+            padding: 40px 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .score-display {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin: 20px 0;
+        }
+
+        /* Mobile Anpassung */
+        @media (max-width: 450px) {
+            .button-grid { grid-template-columns: 1fr; }
+            .sentence { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Entscheidungs-Buttons</h1>
+        <p>Wähle das richtige Wort für die Lücke.</p>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div class="quiz-card" id="quiz-card">
+        <div class="sentence" id="sentence-display">
+            <!-- Satz -->
+        </div>
+        <div class="button-grid" id="button-grid">
+            <!-- Buttons -->
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="feedback-box">
+            <h3 id="feedback-title">Ergebnis</h3>
+            <p class="explanation" id="explanation-text"></p>
+            <button class="next-btn" onclick="nextQuestion()">Nächste Frage</button>
+        </div>
+    </div>
+
+    <div class="result-screen" id="result-screen">
+        <h2>Übung beendet</h2>
+        <div class="score-display" id="final-score">0 / 0</div>
+        <p id="result-message"></p>
+        <button class="next-btn" onclick="location.reload()">Nochmal starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                before: "Я сегодня",
+                after: ".",
+                choices: ["устал", "был устал"],
+                correct: "устал",
+                explanation: "Im Russischen wird bei Zuständen wie Müdigkeit in der Gegenwart kein Hilfsverb verwendet. „Я устал“ ist bereits die vollständige Aussage."
+            },
+            {
+                before: "Мне очень",
+                after: "вчера.",
+                choices: ["повезло", "было повезло"],
+                correct: "повезло",
+                explanation: "Das Verb „повезло“ (Glück gehabt) steht im Russischen alleine. Die Form „было“ wird hier nicht verwendet."
+            },
+            {
+                before: "Здесь",
+                after: "курить.",
+                choices: ["нельзя", "не можно"],
+                correct: "нельзя",
+                explanation: "„Не можно“ existiert nicht. Für Verbote oder Unmöglichkeiten muss man „нельзя“ verwenden."
+            },
+            {
+                before: "Я сейчас",
+                after: "метро.",
+                choices: ["в", "на"],
+                correct: "в",
+                explanation: "Wenn man sich körperlich in einem Verkehrsmittel befindet, nutzt man die Präposition „в“."
+            },
+            {
+                before: "Я пил кофе и так",
+                after: ".",
+                choices: ["далее", "дальше"],
+                correct: "далее",
+                explanation: "Die feste Wendung für „und so weiter“ heißt „и так далее“. „Дальше“ passt in diesem festen Ausdruck nicht."
+            },
+            {
+                before: "Я купила подарок моему",
+                after: ".",
+                choices: ["коллеге", "коллегу"],
+                correct: "коллеге",
+                explanation: "Im Dativ (Wem?) bekommt das Wort „коллега“ (wie „мужчина“) die Endung „-е“."
+            },
+            {
+                before: "Это моя главная",
+                after: ".",
+                choices: ["цель", "целя"],
+                correct: "цель",
+                explanation: "Das Wort „цель“ ist weiblich und endet auf ein Weichheitszeichen. Es gibt keine Form namens „целя“."
+            },
+            {
+                before: "У меня есть хорошая",
+                after: ".",
+                choices: ["идея", "идею"],
+                correct: "идея",
+                explanation: "Im Nominativ (Was ist da?) lautet das Wort „идея“. Die Form „идею“ wäre Akkusativ."
+            },
+            {
+                before: "Я прочитала",
+                after: "книг.",
+                choices: ["много", "многие"],
+                correct: "много",
+                explanation: "Bei Mengenangaben (viel/viele) nutzt man „много“ mit dem Genitiv Plural."
+            },
+            {
+                before: "Он любит чай, я",
+                after: "люблю чай.",
+                choices: ["тоже", "также"],
+                correct: "тоже",
+                explanation: "Wenn zwei verschiedene Personen dasselbe tun, benutzt man „тоже“. „Также“ nutzt man eher bei Aufzählungen einer Person."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function loadQuestion() {
+            const data = quizData[currentQuestion];
+            const sentenceDisplay = document.getElementById('sentence-display');
+            const buttonGrid = document.getElementById('button-grid');
+            const progressBar = document.getElementById('progress-bar');
+
+            // Fortschritt
+            progressBar.style.width = `${(currentQuestion / quizData.length) * 100}%`;
+
+            // Satz anzeigen
+            sentenceDisplay.innerHTML = `${data.before} <span class="gap">...</span> ${data.after}`;
+
+            // Buttons mischen und anzeigen
+            buttonGrid.innerHTML = '';
+            const shuffledChoices = shuffle([...data.choices]);
+            
+            shuffledChoices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = choice;
+                btn.onclick = () => checkAnswer(choice);
+                buttonGrid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected) {
+            const data = quizData[currentQuestion];
+            const isRight = (selected === data.correct);
+            const overlay = document.getElementById('overlay');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const explanationText = document.getElementById('explanation-text');
+            const gap = document.querySelector('.gap');
+
+            if (isRight) {
+                score++;
+                feedbackTitle.innerText = "Richtig! ✓";
+                feedbackTitle.style.color = "var(--success-green)";
+                gap.style.color = "var(--success-green)";
+            } else {
+                feedbackTitle.innerText = "Nicht ganz... ✕";
+                feedbackTitle.style.color = "var(--error-red)";
+                gap.style.color = "var(--error-red)";
+            }
+
+            gap.innerText = selected;
+            explanationText.innerText = data.explanation;
+            overlay.style.display = 'flex';
+        }
+
+        function nextQuestion() {
+            document.getElementById('overlay').style.display = 'none';
+            currentQuestion++;
+
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('quiz-card').style.display = 'none';
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.style.display = 'block';
+            document.getElementById('final-score').innerText = `${score} / ${quizData.length}`;
+            
+            let msg = "";
+            if(score === quizData.length) msg = "Hervorragend! Du hast alles verstanden.";
+            else if(score >= quizData.length / 2) msg = "Gute Arbeit! Schau dir die Fehler noch einmal an.";
+            else msg = "Wiederhole am besten noch einmal das Video-Transkript.";
+            
+            document.getElementById('result-message').innerText = msg;
+        }
+
+        // Quiz-Start
+        loadQuestion();
+    </script>
+</body>
+</html>
