@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: Finde den Fehler</title>
+    <style>
+        :root {
+            --primary-color: #673AB7;
+            --secondary-color: #512DA8;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --bg-color: #f5f7fa;
+            --text-color: #333;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 500px;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .quiz-container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .instruction {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            color: #666;
+        }
+
+        .sentence-area {
+            font-size: 1.8rem;
+            line-height: 2.5;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Die anklickbaren Wörter */
+        .word {
+            padding: 5px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            background: #f0f0f0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        @media (hover: hover) {
+            .word:hover {
+                background: #e0e0e0;
+                border-color: var(--primary-color);
+            }
+        }
+
+        .word.selected-wrong {
+            background-color: #ffebee;
+            border-color: var(--error-color);
+            color: var(--error-color);
+        }
+
+        .word.found-error {
+            background-color: #e8f5e9;
+            border-color: var(--success-color);
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        /* Feedback-Bereich */
+        .feedback-overlay {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-success {
+            background-color: #e8f5e9;
+            border: 1px solid var(--success-color);
+        }
+
+        .correction-text {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .explanation {
+            font-size: 1rem;
+            line-height: 1.4;
+            color: #444;
+        }
+
+        .next-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            display: none;
+        }
+
+        .result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score {
+            font-size: 3rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Fehler-Detektiv</h1>
+        <p>In jedem Satz versteckt sich ein Fehler. Klicke auf das falsche Wort!</p>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+
+    <div class="quiz-container" id="quiz-box">
+        <div class="instruction">Klicke auf das falsche Wort im Satz:</div>
+        <div class="sentence-area" id="sentence"></div>
+        
+        <div class="feedback-overlay" id="feedback">
+            <div class="correction-text" id="correction"></div>
+            <div class="explanation" id="explanation"></div>
+            <button class="next-btn" id="next-btn" onclick="loadNext()">Nächster Satz</button>
+        </div>
+    </div>
+
+    <div class="result-screen" id="results">
+        <h2>Übung beendet!</h2>
+        <p>Du hast alle Fehler gefunden.</p>
+        <div class="score" id="final-score"></div>
+        <button class="next-btn" style="display:block" onclick="location.reload()">Nochmal starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                sentence: ["Я", "был", "устал"],
+                errorIndex: 1,
+                correction: "Я устал",
+                explanation: "Das Wort „был“ ist hier falsch. Wenn man über den jetzigen Moment spricht, sagt man einfach „Я устал“. Nur bei echten Adjektiven in der Vergangenheit nutzt man „был“."
+            },
+            {
+                sentence: ["Мне", "было", "повезло"],
+                errorIndex: 1,
+                correction: "Мне повезло",
+                explanation: "Bei der Konstruktion „Glück haben“ (повезло) wird im Russischen kein Hilfsverb für die Vergangenheit benötigt."
+            },
+            {
+                sentence: ["Здесь", "не", "можно", "курить"],
+                errorIndex: 2,
+                correction: "Нельзя",
+                explanation: "„Не можно“ existiert nicht. Wenn etwas verboten ist, muss man das Wort „Нельзя“ verwenden."
+            },
+            {
+                sentence: ["Сейчас", "я", "на", "метро"],
+                errorIndex: 2,
+                correction: "в метро",
+                explanation: "Wenn du dich körperlich im Fahrzeug befindest, nutzt du die Präposition „в“. „На“ nutzt man meist nur mit Verben der Bewegung wie „ехать“."
+            },
+            {
+                sentence: ["Я", "гулял", "и", "так", "дальше"],
+                errorIndex: 4,
+                correction: "и так далее",
+                explanation: "Der feste Ausdruck für „und so weiter“ lautet immer „и так далее“. Das Wort „дальше“ bedeutet zwar „weiter“, passt hier aber nicht in die Redewendung."
+            },
+            {
+                sentence: ["Это", "моя", "новый", "коллега", "(Frau)"],
+                errorIndex: 2,
+                correction: "новая коллега",
+                explanation: "Da „коллега“ sich hier auf eine Frau bezieht, muss auch das Adjektiv die weibliche Endung haben: „новая“."
+            },
+            {
+                sentence: ["Это", "мой", "цель"],
+                errorIndex: 1,
+                correction: "моя цель",
+                explanation: "Das Wort „цель“ (Ziel) ist im Russischen weiblich. Daher muss es „моя цель“ heißen."
+            },
+            {
+                sentence: ["Это", "большой", "проблема"],
+                errorIndex: 1,
+                correction: "большая проблема",
+                explanation: "Das Wort „проблема“ endet auf -а und ist somit weiblich. Das Adjektiv muss „большая“ lauten."
+            },
+            {
+                sentence: ["Я", "прочитал", "многие", "книг"],
+                errorIndex: 2,
+                correction: "много книг",
+                explanation: "Wenn du eine große Anzahl (Menge) meinst, benutzt du „много“ mit dem Genitiv. „Многие“ bedeutet eher „viele von (bestimmten)“."
+            },
+            {
+                sentence: ["Я", "люблю", "чай", "и", "тоже", "люблю", "кофе"],
+                errorIndex: 4,
+                correction: "также",
+                explanation: "Wenn du zwei Dinge über dich selbst aufzählst, nutzt du „также“. „Тоже“ benutzt du nur, wenn du dich mit einer anderen Person vergleichst."
+            }
+        ];
+
+        let currentIndex = 0;
+        let errorsFound = 0;
+        let canClick = true;
+
+        function initQuiz() {
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            canClick = true;
+            const data = quizData[currentIndex];
+            const sentenceEl = document.getElementById('sentence');
+            const feedbackEl = document.getElementById('feedback');
+            const nextBtn = document.getElementById('next-btn');
+            const progressEl = document.getElementById('progress');
+
+            // Fortschritt
+            progressEl.style.width = `${(currentIndex / quizData.length) * 100}%`;
+            
+            // UI zurücksetzen
+            sentenceEl.innerHTML = '';
+            feedbackEl.style.display = 'none';
+            nextBtn.style.display = 'none';
+
+            // Wörter generieren
+            data.sentence.forEach((word, index) => {
+                const span = document.createElement('span');
+                span.className = 'word';
+                span.innerText = word;
+                span.onclick = () => handleWordClick(index, span);
+                sentenceEl.appendChild(span);
+            });
+        }
+
+        function handleWordClick(index, element) {
+            if (!canClick) return;
+
+            const data = quizData[currentIndex];
+            
+            if (index === data.errorIndex) {
+                // Richtiges (falsches) Wort gefunden
+                element.className = 'word found-error';
+                showFeedback(true);
+                canClick = false;
+                errorsFound++;
+            } else {
+                // Ein korrektes Wort wurde fälschlicherweise angeklickt
+                element.classList.add('selected-wrong');
+                setTimeout(() => {
+                    element.classList.remove('selected-wrong');
+                }, 500);
+            }
+        }
+
+        function showFeedback(isCorrect) {
+            const data = quizData[currentIndex];
+            const feedbackEl = document.getElementById('feedback');
+            const correctionEl = document.getElementById('correction');
+            const explanationEl = document.getElementById('explanation');
+            const nextBtn = document.getElementById('next-btn');
+
+            feedbackEl.style.display = 'block';
+            feedbackEl.className = 'feedback-overlay feedback-success';
+            correctionEl.innerText = `Korrektur: „${data.correction}“`;
+            explanationEl.innerText = data.explanation;
+            nextBtn.style.display = 'block';
+        }
+
+        function loadNext() {
+            currentIndex++;
+            if (currentIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showFinalResults();
+            }
+        }
+
+        function showFinalResults() {
+            document.getElementById('quiz-box').style.display = 'none';
+            document.getElementById('progress').style.width = '100%';
+            const resultsEl = document.getElementById('results');
+            resultsEl.style.display = 'block';
+            document.getElementById('final-score').innerText = `${errorsFound} / ${quizData.length}`;
+        }
+
+        // Start
+        initQuiz();
+    </script>
+</body>
+</html>
