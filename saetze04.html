@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: Sätze vervollständigen</title>
+    <style>
+        :root {
+            --primary-blue: #2196F3;
+            --success-green: #4CAF50;
+            --error-red: #F44336;
+            --bg-light: #f8f9fa;
+            --text-dark: #2c3e50;
+            --card-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 500px;
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-blue);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .question-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .sentence {
+            font-size: 1.6rem;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            min-height: 80px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .placeholder {
+            border-bottom: 3px solid var(--primary-blue);
+            min-width: 80px;
+            display: inline-block;
+            color: var(--primary-blue);
+            font-weight: bold;
+            padding: 0 5px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        @media (min-width: 480px) {
+            .options-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .option-tile {
+            background: #fff;
+            border: 2px solid #edeff2;
+            padding: 18px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .option-tile:hover {
+            border-color: var(--primary-blue);
+            background: #f0f7ff;
+            transform: translateY(-2px);
+        }
+
+        .option-tile:active {
+            transform: translateY(0);
+        }
+
+        /* Overlay für Erklärungen */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .explanation-box {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .explanation-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.4rem;
+        }
+
+        .explanation-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            color: #555;
+        }
+
+        .next-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .result-screen {
+            display: none;
+            text-align: center;
+            background: white;
+            padding: 40px 20px;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 8px solid var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 20px auto;
+            color: var(--primary-blue);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-header">
+        <h1>Russisch-Quiz</h1>
+        <p>Wähle das richtige Wort für die Lücke.</p>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progress"></div>
+    </div>
+
+    <div class="question-card" id="quiz-card">
+        <div class="sentence" id="sentence-display">
+            <!-- Satz-Bereich -->
+        </div>
+        <div class="options-grid" id="options-display">
+            <!-- Antwort-Kacheln -->
+        </div>
+    </div>
+
+    <div class="result-screen" id="result-screen">
+        <h2>Ergebnis</h2>
+        <div class="score-circle" id="final-score">0/0</div>
+        <p id="result-message"></p>
+        <button class="next-btn" onclick="location.reload()">Nochmal versuchen</button>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="explanation-box">
+            <h3 id="feedback-title">Feedback</h3>
+            <p class="explanation-text" id="explanation-text"></p>
+            <button class="next-btn" onclick="nextQuestion()">Nächste Frage</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                before: "Вчера я",
+                after: "уставшая.",
+                options: ["была", "был", "было"],
+                correct: "была",
+                explanation: "Da „уставшая“ weiblich ist, muss auch die Vergangenheitsform des Verbs weiblich sein: „была“."
+            },
+            {
+                before: "Мне очень",
+                after: "повезло.",
+                options: ["повезло", "было", "был"],
+                correct: "повезло",
+                explanation: "In der Vergangenheit von „Glück haben“ verwenden wir kein Hilfsverb „было“. Man sagt einfach „мне повезло“."
+            },
+            {
+                before: "Здесь",
+                after: "курить.",
+                options: ["нельзя", "не можно", "нет"],
+                correct: "нельзя",
+                explanation: "„Не можно“ existiert nicht. Für Verbote nutzt man immer „Нельзя“."
+            },
+            {
+                before: "Алло! Я сейчас",
+                after: "метро.",
+                options: ["в", "на", "у"],
+                correct: "в",
+                explanation: "Wenn du dich gerade körperlich in der Metro befindest, nutzt du die Präposition „в“."
+            },
+            {
+                before: "Я пил кофе",
+                after: "далее.",
+                options: ["и так", "и как", "и ещё"],
+                correct: "и так",
+                explanation: "Die feste Wendung für „und so weiter“ lautet immer „и так далее“."
+            },
+            {
+                before: "Я купила подарок моей",
+                after: ".",
+                options: ["коллеге", "коллега", "коллегу"],
+                correct: "коллеге",
+                explanation: "Im Dativ (Wem?) wird „коллега“ wie ein weibliches Wort dekliniert: „коллеге“."
+            },
+            {
+                before: "Это моя главная",
+                after: ".",
+                options: ["цель", "целя", "целью"],
+                correct: "цель",
+                explanation: "„Цель“ ist ein weibliches Substantiv und endet auf ein Weichheitszeichen."
+            },
+            {
+                before: "У меня есть хорошая",
+                after: ".",
+                options: ["идея", "идею", "идеи"],
+                correct: "идея",
+                explanation: "„Идея“ ist weiblich. Im Nominativ (Was ist da?) bleibt es bei „идея“."
+            },
+            {
+                before: "Я прочитала",
+                after: "книг.",
+                options: ["много", "многие", "многое"],
+                correct: "много",
+                explanation: "„Много“ steht bei Mengenangaben mit dem Genitiv Plural („книг“)."
+            },
+            {
+                before: "Он любит чай, и я",
+                after: "люблю чай.",
+                options: ["тоже", "также", "ещё"],
+                correct: "тоже",
+                explanation: "Wenn eine andere Person etwas tut und du das Gleiche tust, verwendest du „тоже“."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function loadQuestion() {
+            const data = quizData[currentQuestion];
+            const sentenceDisplay = document.getElementById('sentence-display');
+            const optionsDisplay = document.getElementById('options-display');
+            const progressBar = document.getElementById('progress');
+            
+            progressBar.style.width = `${(currentQuestion / quizData.length) * 100}%`;
+            sentenceDisplay.innerHTML = `${data.before} <span class="placeholder">...</span> ${data.after}`;
+            optionsDisplay.innerHTML = '';
+
+            // Optionen mischen
+            const shuffledOptions = shuffle([...data.options]);
+
+            shuffledOptions.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.className = 'option-tile';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt);
+                optionsDisplay.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected) {
+            const data = quizData[currentQuestion];
+            const isRight = (selected === data.correct);
+            const overlay = document.getElementById('overlay');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const explanationText = document.getElementById('explanation-text');
+            const placeholder = document.querySelector('.placeholder');
+
+            if (isRight) {
+                score++;
+                feedbackTitle.innerText = "Richtig! ✓";
+                feedbackTitle.style.color = "var(--success-green)";
+                placeholder.style.color = "var(--success-green)";
+            } else {
+                feedbackTitle.innerText = "Falsch... ✕";
+                feedbackTitle.style.color = "var(--error-red)";
+                placeholder.style.color = "var(--error-red)";
+            }
+
+            placeholder.innerText = selected;
+            explanationText.innerText = data.explanation;
+            overlay.style.display = 'flex';
+        }
+
+        function nextQuestion() {
+            document.getElementById('overlay').style.display = 'none';
+            currentQuestion++;
+
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('progress').style.width = '100%';
+            document.getElementById('quiz-card').style.display = 'none';
+            document.querySelector('.quiz-header').style.display = 'none';
+            
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.style.display = 'block';
+            document.getElementById('final-score').innerText = `${score} / ${quizData.length}`;
+            
+            const msg = document.getElementById('result-message');
+            if(score === quizData.length) msg.innerText = "Hervorragend! Alles richtig.";
+            else if(score >= quizData.length / 2) msg.innerText = "Gute Leistung! Ein paar Fehler waren dabei.";
+            else msg.innerText = "Übe am besten nochmal mit dem Video.";
+        }
+
+        // Quiz starten
+        loadQuestion();
+    </script>
+</body>
+</html>
