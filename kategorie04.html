@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: Genus-Sortieren</title>
+    <style>
+        :root {
+            --primary-blue: #1976D2;
+            --male-color: #2196F3;
+            --female-color: #E91E63;
+            --bg-color: #f8f9fa;
+            --text-main: #333;
+            --success-green: #4CAF50;
+            --error-red: #F44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            max-width: 600px;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 500px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-blue);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            gap: 20px;
+        }
+
+        /* Boxen für die Kategorien */
+        .drop-zones {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            gap: 20px;
+        }
+
+        .drop-zone {
+            flex: 1;
+            min-height: 150px;
+            border: 3px dashed #ccc;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            transition: all 0.3s ease;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .drop-zone.male { border-color: var(--male-color); color: var(--male-color); }
+        .drop-zone.female { border-color: var(--female-color); color: var(--female-color); }
+
+        .drop-zone.drag-over {
+            background-color: #f0f0f0;
+            transform: scale(1.05);
+            border-style: solid;
+        }
+
+        .drop-zone h2 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        /* Das ziehbare Wort */
+        .word-card-container {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .word-card {
+            background: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: grab;
+            touch-action: none; /* Wichtig für mobiles Drag & Drop */
+            user-select: none;
+            border: 2px solid #eee;
+            position: relative;
+            z-index: 10;
+        }
+
+        .word-card:active { cursor: grabbing; }
+
+        /* Overlay für Feedback */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .feedback-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .explanation {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin: 20px 0;
+            color: #444;
+        }
+
+        .next-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        /* Ergebnisanzeige */
+        #result-screen {
+            display: none;
+            text-align: center;
+            background: white;
+            padding: 40px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin: 20px 0;
+        }
+
+        /* Mobile Anpassungen */
+        @media (max-width: 500px) {
+            .drop-zone h2 { font-size: 1.8rem; }
+            .word-card { font-size: 1.4rem; padding: 15px 30px; }
+            .drop-zones { gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Genus-Sortieren</h1>
+        <p>Ziehe das Wort in die richtige Box: <b>Он</b> (männlich) oder <b>Она</b> (weiblich).</p>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progress"></div>
+    </div>
+
+    <div class="game-area" id="game-area">
+        <div class="word-card-container">
+            <div id="active-word" class="word-card">Wird geladen...</div>
+        </div>
+
+        <div class="drop-zones">
+            <div id="zone-male" class="drop-zone male" data-gender="он">
+                <h2>Он</h2>
+                <p>männlich</p>
+            </div>
+            <div id="zone-female" class="drop-zone female" data-gender="она">
+                <h2>Она</h2>
+                <p>weiblich</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="explanation-overlay" class="overlay">
+        <div class="feedback-box">
+            <h3 id="feedback-title">Feedback</h3>
+            <p id="explanation-text" class="explanation"></p>
+            <button class="next-btn" onclick="nextWord()">Weiter</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h2>Übung beendet!</h2>
+        <div class="score-display" id="final-score">0 / 0</div>
+        <button class="next-btn" onclick="location.reload()">Nochmal spielen</button>
+    </div>
+
+    <script>
+        const wordList = [
+            { word: "цель", gender: "она", expl: "Das Wort цель (Ziel) ist weiblich, obwohl es auf ein Weichheitszeichen endet. Merke dir: цель — она." },
+            { word: "проблема", gender: "она", expl: "Wörter auf -а wie проблема sind im Russischen weiblich." },
+            { word: "идея", gender: "она", expl: "Wörter auf -я wie идея sind im Russischen weiblich." },
+            { word: "мой коллега", gender: "он", expl: "Коллега ist ein Wort mit gemeinsamem Geschlecht. Wenn 'мой' davor steht, ist ein Mann gemeint." },
+            { word: "моя коллега", gender: "она", expl: "Wenn 'моя' vor коллега steht, bezieht es sich auf eine Frau." },
+            { word: "подарок", gender: "он", expl: "Ein Substantiv, das auf einen Konsonanten endet, ist männlich." },
+            { word: "музей", gender: "он", expl: "Substantive auf -й sind im Russischen männlich." },
+            { word: "автобус", gender: "он", expl: "Endet auf Konsonant, also männlich." },
+            { word: "уставшая", gender: "она", expl: "Die Endung -ая zeigt an, dass es sich um eine weibliche Form handelt." },
+            { word: "уставший", gender: "он", expl: "Die Endung -ий zeigt an, dass es sich um eine männliche Form handelt." }
+        ];
+
+        let shuffledWords = [];
+        let currentIndex = 0;
+        let score = 0;
+        let isDragging = false;
+
+        function initGame() {
+            shuffledWords = [...wordList].sort(() => Math.random() - 0.5);
+            showWord();
+        }
+
+        function showWord() {
+            if (currentIndex >= shuffledWords.length) {
+                showResults();
+                return;
+            }
+            const wordObj = shuffledWords[currentIndex];
+            const card = document.getElementById('active-word');
+            card.innerText = wordObj.word;
+            card.style.transform = "translate(0,0)";
+            updateProgress();
+        }
+
+        function updateProgress() {
+            document.getElementById('progress').style.width = `${(currentIndex / shuffledWords.length) * 100}%`;
+        }
+
+        // Drag and Drop Logik (Pointer Events für Maus & Touch)
+        const card = document.getElementById('active-word');
+        let startX, startY;
+
+        card.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            card.style.transition = "none";
+            card.setPointerCapture(e.pointerId);
+        });
+
+        card.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            card.style.transform = `translate(${dx}px, ${dy}px)`;
+            
+            // Visuelles Feedback für Zonen
+            checkOverZone(e.clientX, e.clientY);
+        });
+
+        card.addEventListener('pointerup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            card.style.transition = "transform 0.3s ease";
+            
+            const dropTarget = checkOverZone(e.clientX, e.clientY);
+            if (dropTarget) {
+                handleDrop(dropTarget.dataset.gender);
+            } else {
+                card.style.transform = "translate(0,0)";
+            }
+            
+            // Zonen-Highlights entfernen
+            document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+        });
+
+        function checkOverZone(x, y) {
+            const zones = document.querySelectorAll('.drop-zone');
+            let activeZone = null;
+            zones.forEach(zone => {
+                const rect = zone.getBoundingClientRect();
+                if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
+                    zone.classList.add('drag-over');
+                    activeZone = zone;
+                } else {
+                    zone.classList.remove('drag-over');
+                }
+            });
+            return activeZone;
+        }
+
+        function handleDrop(selectedGender) {
+            const correctGender = shuffledWords[currentIndex].gender;
+            const isRight = (selectedGender === correctGender);
+            
+            if (isRight) score++;
+
+            const feedbackTitle = document.getElementById('feedback-title');
+            feedbackTitle.innerText = isRight ? "Richtig! ✓" : "Nicht ganz... ✕";
+            feedbackTitle.style.color = isRight ? "var(--success-green)" : "var(--error-red)";
+            
+            document.getElementById('explanation-text').innerText = shuffledWords[currentIndex].expl;
+            document.getElementById('explanation-overlay').style.display = 'flex';
+        }
+
+        function nextWord() {
+            document.getElementById('explanation-overlay').style.display = 'none';
+            currentIndex++;
+            showWord();
+        }
+
+        function showResults() {
+            document.getElementById('game-area').style.display = 'none';
+            document.querySelector('.progress-container').style.display = 'none';
+            const screen = document.getElementById('result-screen');
+            screen.style.display = 'block';
+            document.getElementById('final-score').innerText = `${score} / ${shuffledWords.length}`;
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
