@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz mit Erklärungen</title>
+    <style>
+        :root {
+            --correct-color: #4CAF50;
+            --wrong-color: #F44336;
+            --info-color: #2196F3;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-color);
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            text-align: center;
+            padding: 0 10px;
+            z-index: 10;
+        }
+
+        .quiz-container {
+            position: relative;
+            width: 90vw;
+            max-width: 400px;
+            height: 450px;
+            perspective: 1000px;
+        }
+
+        .card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+            cursor: grab;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        /* Erklärungslayer */
+        #explanation-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .explanation-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .explanation-content h3 {
+            margin-top: 0;
+        }
+
+        .explanation-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .next-btn {
+            background-color: var(--info-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 40px;
+        }
+
+        .btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-wrong { background-color: var(--wrong-color); }
+        .btn-correct { background-color: var(--correct-color); }
+
+        .stamp {
+            position: absolute;
+            top: 50px;
+            padding: 10px 20px;
+            border: 5px solid;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 2rem;
+            text-transform: uppercase;
+            opacity: 0;
+        }
+
+        .stamp-correct { border-color: var(--correct-color); color: var(--correct-color); left: 20px; transform: rotate(-20deg); }
+        .stamp-wrong { border-color: var(--wrong-color); color: var(--wrong-color); right: 20px; transform: rotate(20deg); }
+
+        #result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--info-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Russisch-Quiz</h1>
+        <p>Wische oder klicke: Ist der Satz korrekt?</p>
+    </div>
+
+    <div class="quiz-container" id="card-container"></div>
+
+    <div id="explanation-overlay">
+        <div class="explanation-content">
+            <h3 id="feedback-title"></h3>
+            <p class="explanation-text" id="explanation-text"></p>
+            <button class="next-btn" onclick="closeExplanation()">Weiter</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h2>Ergebnis</h2>
+        <div class="score-display" id="final-score">0 / 0</div>
+        <button class="next-btn" style="margin-top:20px" onclick="location.reload()">Nochmal spielen</button>
+    </div>
+
+    <div class="controls" id="quiz-controls">
+        <button class="btn btn-wrong" onclick="handleButtonClick(false)">✕</button>
+        <button class="btn btn-correct" onclick="handleButtonClick(true)">✓</button>
+    </div>
+
+    <script>
+        const questions = [
+            { 
+                text: "Я был устал", 
+                isCorrect: false, 
+                explanation: "Falsch. Um einen Zustand auszudrücken, sagt man einfach „Я устал“. Wenn man über die Vergangenheit spricht, nutzt man das Adjektiv: „Вчера я был уставший“." 
+            },
+            { 
+                text: "Мне повезло", 
+                isCorrect: true, 
+                explanation: "Richtig. Bei „Glück haben“ wird kein Hilfsverb „sein“ verwendet. Man sagt einfach „Мне повезло“." 
+            },
+            { 
+                text: "Не можно здесь курить", 
+                isCorrect: false, 
+                explanation: "Falsch. „Не можно“ gibt es im Russischen nicht. Man muss das Wort „Нельзя“ verwenden." 
+            },
+            { 
+                text: "Я в метро", 
+                isCorrect: true, 
+                explanation: "Richtig. Wenn man sich innerhalb eines Verkehrsmittels befindet, verwendet man die Präposition „в“." 
+            },
+            { 
+                text: "И так дальше", 
+                isCorrect: false, 
+                explanation: "Falsch. Die feste Redewendung für „und so weiter“ lautet „и так далее“." 
+            },
+            { 
+                text: "Она моя коллега", 
+                isCorrect: true, 
+                explanation: "Richtig. „Коллега“ kann männlich oder weiblich sein. Für eine Frau sagt man „моя коллега“." 
+            },
+            { 
+                text: "Это мой цель", 
+                isCorrect: false, 
+                explanation: "Falsch. Das Wort „цель“ ist im Russischen immer weiblich. Es muss also „моя цель“ heißen." 
+            },
+            { 
+                text: "У меня есть хорошая идея", 
+                isCorrect: true, 
+                explanation: "Richtig. „Идея“ ist ein weibliches Substantiv, daher ist die Endung „хорошая“ korrekt." 
+            },
+            { 
+                text: "Много книг", 
+                isCorrect: true, 
+                explanation: "Richtig. Nach dem Wort „много“ (viel/viele) folgt der Genitiv Plural." 
+            },
+            { 
+                text: "Я люблю кино и тоже я люблю спорт", 
+                isCorrect: false, 
+                explanation: "Falsch. Wenn man zwei Dinge über sich selbst aufzählt, verwendet man „также“. „Тоже“ nutzt man, wenn man sich mit einer anderen Person vergleicht." 
+            }
+        ];
+
+        let currentCardIndex = 0;
+        let score = 0;
+        const container = document.getElementById('card-container');
+        const controls = document.getElementById('quiz-controls');
+        const overlay = document.getElementById('explanation-overlay');
+
+        function createCard(index) {
+            if (index >= questions.length) {
+                showResults();
+                return;
+            }
+            container.innerHTML = '';
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="stamp stamp-correct">Richtig</div>
+                <div class="stamp stamp-wrong">Falsch</div>
+                <h2>${questions[index].text}</h2>
+            `;
+            setupDragAndDrop(card);
+            container.appendChild(card);
+        }
+
+        function setupDragAndDrop(card) {
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+
+            const onStart = (e) => {
+                isDragging = true;
+                startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                card.style.transition = 'none';
+            };
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+                currentX = (e.type.includes('touch') ? e.touches[0].clientX : e.clientX) - startX;
+                const rotation = currentX / 10;
+                card.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
+
+                const stampCorrect = card.querySelector('.stamp-correct');
+                const stampWrong = card.querySelector('.stamp-wrong');
+                if (currentX > 50) { stampCorrect.style.opacity = 1; stampWrong.style.opacity = 0; }
+                else if (currentX < -50) { stampWrong.style.opacity = 1; stampCorrect.style.opacity = 0; }
+                else { stampCorrect.style.opacity = 0; stampWrong.style.opacity = 0; }
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                if (currentX > 100) processChoice(true);
+                else if (currentX < -100) processChoice(false);
+                else {
+                    card.style.transition = 'transform 0.3s ease';
+                    card.style.transform = 'translateX(0) rotate(0)';
+                    card.querySelectorAll('.stamp').forEach(s => s.style.opacity = 0);
+                }
+            };
+
+            card.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            card.addEventListener('touchstart', onStart);
+            document.addEventListener('touchmove', onMove);
+            document.addEventListener('touchend', onEnd);
+        }
+
+        function processChoice(userSaysCorrect) {
+            const q = questions[currentCardIndex];
+            const isActuallyCorrect = q.isCorrect;
+            const isUserRight = (userSaysCorrect === isActuallyCorrect);
+
+            if (isUserRight) score++;
+
+            document.getElementById('feedback-title').innerText = isUserRight ? "Richtig! ✓" : "Nicht ganz... ✕";
+            document.getElementById('feedback-title').style.color = isUserRight ? "var(--correct-color)" : "var(--wrong-color)";
+            document.getElementById('explanation-text').innerText = q.explanation;
+            
+            overlay.style.display = 'flex';
+        }
+
+        function closeExplanation() {
+            overlay.style.display = 'none';
+            currentCardIndex++;
+            createCard(currentCardIndex);
+        }
+
+        function handleButtonClick(choice) {
+            processChoice(choice);
+        }
+
+        function showResults() {
+            container.style.display = 'none';
+            controls.style.display = 'none';
+            document.querySelector('.header').style.display = 'none';
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.style.display = 'block';
+            document.getElementById('final-score').innerText = `${score} / ${questions.length}`;
+        }
+
+        createCard(currentCardIndex);
+    </script>
+</body>
+</html>
