@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: Finde den falschen Satz</title>
+    <style>
+        :root {
+            --primary-blue: #3f51b5;
+            --success-green: #4CAF50;
+            --error-red: #f44336;
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 500px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-blue);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .quiz-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+        }
+
+        .instruction {
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            background: #fff;
+            border: 2px solid #edeff2;
+            padding: 18px 25px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.2rem;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+        }
+
+        @media (hover: hover) {
+            .option:hover {
+                border-color: var(--primary-blue);
+                background-color: #f0f4ff;
+                transform: translateX(5px);
+            }
+        }
+
+        .option.correct-choice {
+            border-color: var(--success-green);
+            background-color: #e8f5e9;
+            color: var(--success-green);
+            font-weight: bold;
+        }
+
+        .option.wrong-choice {
+            border-color: var(--error-red);
+            background-color: #ffebee;
+            color: var(--error-red);
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Feedback-Bereich */
+        .feedback-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .feedback-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .feedback-content h3 {
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .explanation-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .next-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .result-screen {
+            display: none;
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header" id="quiz-header">
+        <h1>Satz-Eliminierung</h1>
+        <p>Welcher Satz enthält einen grammatikalischen Fehler? Klicke ihn an.</p>
+    </div>
+
+    <div class="progress-container" id="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div class="quiz-card" id="quiz-card">
+        <div class="instruction">Suche den fehlerhaften Satz:</div>
+        <div class="options-list" id="options-container">
+            <!-- Sätze werden hier eingefügt -->
+        </div>
+    </div>
+
+    <div class="feedback-overlay" id="feedback-overlay">
+        <div class="feedback-content">
+            <h3 id="feedback-title">Gefunden!</h3>
+            <p class="explanation-text" id="explanation-text"></p>
+            <button class="next-btn" onclick="nextQuestion()">Nächste Aufgabe</button>
+        </div>
+    </div>
+
+    <div class="result-screen" id="result-screen">
+        <h2>Übung abgeschlossen</h2>
+        <div class="score-display" id="final-score">0 / 0</div>
+        <button class="next-btn" onclick="location.reload()">Nochmal spielen</button>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                options: [
+                    { text: "Я сегодня устала", correct: true },
+                    { text: "Вчера я был уставшим", correct: true },
+                    { text: "Я был устал", correct: false },
+                    { text: "Я вчера устал", correct: true }
+                ],
+                explanation: "Der Satz „Я был устал“ ist falsch. Bei Zuständen wie Müdigkeit verwenden wir im Russischen kein Hilfsverb in Kombination mit der Kurzform. Richtig wäre: „Я устал“."
+            },
+            {
+                options: [
+                    { text: "Мне повезло", correct: true },
+                    { text: "Мне было повезло", correct: false },
+                    { text: "Мне повезёт завтра", correct: true },
+                    { text: "Ей повезло", correct: true }
+                ],
+                explanation: "Der Satz „Мне было повезло“ ist falsch. In der Konstruktion für „Glück haben“ wird das Verb „быть“ in der Vergangenheit weggelassen."
+            },
+            {
+                options: [
+                    { text: "Здесь можно курить", correct: true },
+                    { text: "Здесь нельзя курить", correct: true },
+                    { text: "Здесь не можно курить", correct: false },
+                    { text: "Тут курить нельзя", correct: true }
+                ],
+                explanation: "Der Satz „Здесь не можно курить“ ist falsch. Die Form „не можно“ existiert nicht. Das korrekte Wort für Verbote ist „нельзя“."
+            },
+            {
+                options: [
+                    { text: "Я сейчас в метро", correct: true },
+                    { text: "Я сейчас на метро", correct: false },
+                    { text: "Я еду на метро", correct: true },
+                    { text: "Я еду в метро", correct: true }
+                ],
+                explanation: "Der Satz „Я сейчас на метро“ ist falsch, wenn man meint, dass man sich gerade darin befindet. In diesem Fall muss die Präposition „в“ verwendet werden."
+            },
+            {
+                options: [
+                    { text: "Я гулял и так далее", correct: true },
+                    { text: "Я пил кофе и так далее", correct: true },
+                    { text: "Я читал и так дальше", correct: false },
+                    { text: "И так далее, и так далее", correct: true }
+                ],
+                explanation: "Der Satz „Я читал und so weiter“ ist falsch. Die feste Wendung für „und so weiter“ lautet immer „и так далее“, niemals „и так дальше“."
+            },
+            {
+                options: [
+                    { text: "Он мой коллега", correct: true },
+                    { text: "Она моя коллега", correct: true },
+                    { text: "Я купил подарок моему коллеге", correct: true },
+                    { text: "Она мой коллега", correct: false }
+                ],
+                explanation: "Der Satz „Она мой коллеga“ ist falsch. Wenn man über eine Frau spricht, muss das Pronomen ebenfalls weiblich sein: „моя коллега“."
+            },
+            {
+                options: [
+                    { text: "Это моя цель", correct: true },
+                    { text: "Это мой цель", correct: false },
+                    { text: "У меня есть цель", correct: true },
+                    { text: "Какая твоя цель?", correct: true }
+                ],
+                explanation: "Der Satz „Это мой цель“ ist falsch. Das Wort „цель“ (Ziel) ist im Russischen immer weiblich, daher muss es „моя цель“ heißen."
+            },
+            {
+                options: [
+                    { text: "Это большая проблема", correct: true },
+                    { text: "Это мой проблема", correct: false },
+                    { text: "У нас есть проблема", correct: true },
+                    { text: "Твоя проблема решена", correct: true }
+                ],
+                explanation: "Der Satz „Dies ist mein Problem“ ist falsch. „Проблема“ ist weiblich, daher muss es „моя проблема“ lauten."
+            },
+            {
+                options: [
+                    { text: "Я прочитал много книг", correct: true },
+                    { text: "Я прочитал многие книг", correct: false },
+                    { text: "Я посетил многие страны", correct: true },
+                    { text: "Много воды", correct: true }
+                ],
+                explanation: "Der Satz „Я прочитал многие книг“ ist falsch. Nach „много“ (Menge) folgt der Genitiv Plural. „Многие“ wird wie ein Adjektiv verwendet und passt hier nicht."
+            },
+            {
+                options: [
+                    { text: "Я люблю чай и также кофе", correct: true },
+                    { text: "Он любит чай, я тоже люблю", correct: true },
+                    { text: "Я люблю чай и тоже люблю кофе", correct: false },
+                    { text: "Мы также любим спорт", correct: true }
+                ],
+                explanation: "Der Satz „Я люблю чай и тоже люблю кофе“ ist falsch. Bei Aufzählungen über sich selbst nutzt man „также“. „Тоже“ vergleicht eine Person mit einer anderen."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let canClick = true;
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function loadQuestion() {
+            canClick = true;
+            const data = quizData[currentQuestion];
+            const container = document.getElementById('options-container');
+            const progressBar = document.getElementById('progress-bar');
+            
+            progressBar.style.width = `${(currentQuestion / quizData.length) * 100}%`;
+            container.innerHTML = '';
+
+            // Sätze mischen, damit der falsche nicht immer an der gleichen Stelle steht
+            const shuffledOptions = shuffle([...data.options]);
+
+            shuffledOptions.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.innerText = opt.text;
+                div.onclick = () => handleChoice(opt, div);
+                container.appendChild(div);
+            });
+        }
+
+        function handleChoice(opt, element) {
+            if (!canClick) return;
+
+            if (!opt.correct) {
+                // Den fehlerhaften Satz gefunden
+                element.classList.add('correct-choice');
+                score++;
+                canClick = false;
+                showFeedback(quizData[currentQuestion].explanation);
+            } else {
+                // Einen korrekten Satz fälschlicherweise angeklickt
+                element.classList.add('wrong-choice');
+                setTimeout(() => {
+                    element.classList.remove('wrong-choice');
+                }, 500);
+            }
+        }
+
+        function showFeedback(text) {
+            document.getElementById('explanation-text').innerText = text;
+            setTimeout(() => {
+                document.getElementById('feedback-overlay').style.display = 'flex';
+            }, 300);
+        }
+
+        function nextQuestion() {
+            document.getElementById('feedback-overlay').style.display = 'none';
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('quiz-card').style.display = 'none';
+            document.getElementById('quiz-header').style.display = 'none';
+            document.getElementById('progress-container').style.display = 'none';
+            
+            const screen = document.getElementById('result-screen');
+            screen.style.display = 'block';
+            document.getElementById('final-score').innerText = `${score} / ${quizData.length}`;
+        }
+
+        // Quiz-Start
+        loadQuestion();
+    </script>
+</body>
+</html>
