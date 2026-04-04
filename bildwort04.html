@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: 8 Bild-Wort-Paare</title>
+    <style>
+        :root {
+            --primary-blue: #1976D2;
+            --success-green: #388E3C;
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --text-dark: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            box-sizing: border-box;
+            color: var(--text-dark);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            max-width: 700px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* Bilder-Gitter */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            width: 100%;
+        }
+
+        .drop-zone {
+            background: white;
+            border: 2px dashed #bdc3c7;
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 140px;
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--primary-blue);
+            background-color: #ebf5ff;
+            transform: scale(1.03);
+        }
+
+        .drop-zone.matched {
+            border-style: solid;
+            border-color: var(--success-green);
+            background-color: #f1f9f1;
+        }
+
+        .image-icon {
+            font-size: 3rem;
+            margin-bottom: 5px;
+            user-select: none;
+        }
+
+        .match-text {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--success-green);
+            margin-top: 5px;
+        }
+
+        /* Wort-Pool */
+        .word-pool {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #ddd;
+            min-height: 100px;
+        }
+
+        .draggable-word {
+            background: var(--primary-blue);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            touch-action: none;
+            user-select: none;
+            z-index: 10;
+        }
+
+        .draggable-word.dragging {
+            opacity: 0.6;
+            cursor: grabbing;
+        }
+
+        /* Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .feedback-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .explanation {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin: 15px 0;
+            color: #444;
+        }
+
+        .next-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        /* Mobile Anpassung */
+        @media (max-width: 768px) {
+            .image-grid { grid-template-columns: repeat(2, 1fr); }
+            .image-icon { font-size: 2.5rem; }
+        }
+
+        @media (max-width: 400px) {
+            .image-grid { grid-template-columns: 1fr; }
+            .draggable-word { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Bild-Wort-Zuordnung (8 Paare)</h1>
+        <p>Ziehe den russischen Satz zum passenden Bild!</p>
+    </div>
+
+    <div class="game-container" id="game-container">
+        <div class="image-grid" id="image-grid">
+            <!-- Bilder-Zonen -->
+        </div>
+
+        <div class="word-pool" id="word-pool">
+            <!-- Wort-Kacheln -->
+        </div>
+    </div>
+
+    <div id="explanation-overlay" class="overlay">
+        <div class="feedback-box">
+            <h3 style="color: var(--success-green); margin-top:0;">Richtig! ✓</h3>
+            <p id="explanation-text" class="explanation"></p>
+            <button class="next-btn" onclick="closeFeedback()">Weiter spielen</button>
+        </div>
+    </div>
+
+    <script>
+        const pairs = [
+            { id: 1, icon: "🚌", text: "Я в автобусе", expl: "Wenn du dich körperlich im Fahrzeug befindest, nutzt du die Präposition в." },
+            { id: 2, icon: "🚗", text: "Я еду на машине", expl: "Wenn du ein Fahrzeug zur Fortbewegung nutzt (mit dem Auto fahren), nutzt du на." },
+            { id: 3, icon: "🚭", text: "Здесь нельзя курить", expl: "Für Verbote nutzt man нельзя. Der Ausdruck не можно existiert im Russischen nicht." },
+            { id: 4, icon: "🎯", text: "Это моя цель", expl: "Das Wort цель (Ziel) ist weiblich. Deshalb heißt es моя цель (nicht мой)." },
+            { id: 5, icon: "🍀", text: "Мне повезло", expl: "Bei 'Glück haben' sagen wir einfach мне повезло ohne das Hilfsverb sein (было)." },
+            { id: 6, icon: "😫", text: "Я устал", expl: "Für den aktuellen Zustand 'Ich bin müde' nutzen wir я устал ohne Hilfsverb (был)." },
+            { id: 7, icon: "⚠️", text: "Это моя проблема", expl: "Das Wort проблема ist im Russischen weiblich (она), deshalb meine Problem = моя проблема." },
+            { id: 8, icon: "💡", text: "Хорошая идея", expl: "Идея ist weiblich. Deshalb braucht das Adjektiv die weibliche Endung -ая (хорошая)." }
+        ];
+
+        let matchedCount = 0;
+        let activeWordId = null;
+
+        function initGame() {
+            const imageGrid = document.getElementById('image-grid');
+            const wordPool = document.getElementById('word-pool');
+
+            // Bilder mischen
+            const shuffledImages = [...pairs].sort(() => Math.random() - 0.5);
+            shuffledImages.forEach(pair => {
+                const zone = document.createElement('div');
+                zone.className = 'drop-zone';
+                zone.dataset.id = pair.id;
+                zone.innerHTML = `<div class="image-icon">${pair.icon}</div><div class="match-text" id="text-${pair.id}"></div>`;
+                imageGrid.appendChild(zone);
+            });
+
+            // Wörter mischen
+            const shuffledWords = [...pairs].sort(() => Math.random() - 0.5);
+            shuffledWords.forEach(pair => {
+                const word = document.createElement('div');
+                word.className = 'draggable-word';
+                word.innerText = pair.text;
+                word.dataset.id = pair.id;
+                setupDraggable(word);
+                wordPool.appendChild(word);
+            });
+        }
+
+        function setupDraggable(el) {
+            let startX, startY, initialX, initialY;
+
+            el.addEventListener('pointerdown', (e) => {
+                activeWordId = el.dataset.id;
+                el.classList.add('dragging');
+                el.setPointerCapture(e.pointerId);
+                
+                const rect = el.getBoundingClientRect();
+                startX = e.clientX;
+                startY = e.clientY;
+                initialX = rect.left;
+                initialY = rect.top;
+
+                el.style.position = 'fixed';
+                el.style.left = `${initialX}px`;
+                el.style.top = `${initialY}px`;
+                el.style.margin = '0';
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (!activeWordId) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                el.style.transform = `translate(${dx}px, ${dy}px)`;
+                
+                checkZones(e.clientX, e.clientY);
+            });
+
+            el.addEventListener('pointerup', (e) => {
+                if (!activeWordId) return;
+                const dropZone = checkZones(e.clientX, e.clientY);
+                
+                if (dropZone && dropZone.dataset.id === activeWordId) {
+                    const pair = pairs.find(p => p.id == activeWordId);
+                    dropZone.classList.remove('drag-over');
+                    dropZone.classList.add('matched');
+                    document.getElementById(`text-${activeWordId}`).innerText = pair.text;
+                    el.style.display = 'none';
+                    
+                    document.getElementById('explanation-text').innerText = pair.expl;
+                    document.getElementById('explanation-overlay').style.display = 'flex';
+                    matchedCount++;
+                } else {
+                    // Reset
+                    el.style.position = '';
+                    el.style.left = '';
+                    el.style.top = '';
+                    el.style.transform = '';
+                    el.classList.remove('dragging');
+                }
+                activeWordId = null;
+            });
+        }
+
+        function checkZones(x, y) {
+            let foundZone = null;
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                const rect = zone.getBoundingClientRect();
+                if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
+                    if (!zone.classList.contains('matched')) {
+                        zone.classList.add('drag-over');
+                        foundZone = zone;
+                    }
+                } else {
+                    zone.classList.remove('drag-over');
+                }
+            });
+            return foundZone;
+        }
+
+        function closeFeedback() {
+            document.getElementById('explanation-overlay').style.display = 'none';
+            if (matchedCount === pairs.length) {
+                alert("Hervorragend! Du hast alle 8 Paare korrekt zugeordnet.");
+                location.reload();
+            }
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
