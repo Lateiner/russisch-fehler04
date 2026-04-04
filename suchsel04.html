@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: Wortgitter</title>
+    <style>
+        :root {
+            --primary: #3f51b5;
+            --success: #4caf50;
+            --highlight: #ffeb3b;
+            --bg: #f4f7f9;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            box-sizing: border-box;
+            color: var(--text);
+        }
+
+        .header { text-align: center; margin-bottom: 15px; }
+        .header h1 { font-size: 1.4rem; margin: 5px 0; }
+
+        /* Wortliste */
+        .word-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            max-width: 450px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .word-item {
+            background: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            border: 1px solid #ddd;
+            color: #777;
+        }
+
+        .word-item.found {
+            background-color: var(--success);
+            color: white;
+            text-decoration: line-through;
+            border-color: var(--success);
+        }
+
+        /* Das Gitter */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            background: #fff;
+            padding: 8px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            background: #fdfdfd;
+            border: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .cell.selected { background-color: var(--highlight); color: #000; }
+        .cell.found { background-color: var(--success); color: white; border-color: var(--success); }
+
+        /* Steuerung */
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+        .btn-restart { background: var(--primary); color: white; }
+        .btn-solution { background: #607d8b; color: white; }
+        .btn:active { opacity: 0.8; }
+
+        @media (max-width: 400px) {
+            .cell { font-size: 0.9rem; }
+            .grid { gap: 2px; padding: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Wortgitter-Quiz</h1>
+        <p>Klicke den ersten und letzten Buchstaben eines Wortes an.</p>
+    </div>
+
+    <div class="word-list" id="word-list">
+        <!-- Wörter werden hier eingefügt -->
+    </div>
+
+    <div class="grid" id="grid">
+        <!-- Zellen werden per JS generiert -->
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-restart" onclick="location.reload()">Neustart</button>
+        <button class="btn btn-solution" onclick="showAllSolutions()">Lösung</button>
+    </div>
+
+    <script>
+        const words = [
+            "ПРОБЛЕМА", "ЦЕЛЬ", "ИДЕЯ", "КОЛЛЕГА", 
+            "НЕЛЬЗЯ", "МОЖНО", "ПОВЕЗЛО", "УСТАЛ"
+        ];
+
+        const gridSize = 10;
+        let grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
+        let firstClick = null;
+        let wordsFoundCount = 0;
+        const placedWords = [];
+
+        const cyrillic = "АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЫЭЮЯ";
+
+        function init() {
+            // Wortliste im UI anzeigen
+            const listEl = document.getElementById('word-list');
+            words.forEach(w => {
+                const div = document.createElement('div');
+                div.className = 'word-item';
+                div.id = 'word-' + w;
+                div.innerText = w;
+                listEl.appendChild(div);
+            });
+
+            // Wörter im Gitter platzieren (waagerecht oder senkrecht)
+            words.forEach(word => {
+                let placed = false;
+                while (!placed) {
+                    const isVertical = Math.random() > 0.5;
+                    const row = Math.floor(Math.random() * (gridSize - (isVertical ? word.length : 0)));
+                    const col = Math.floor(Math.random() * (gridSize - (isVertical ? 0 : word.length)));
+                    
+                    let canPlace = true;
+                    for (let i = 0; i < word.length; i++) {
+                        const r = row + (isVertical ? i : 0);
+                        const c = col + (isVertical ? 0 : i);
+                        if (grid[r][c] !== '' && grid[r][c] !== word[i]) {
+                            canPlace = false;
+                            break;
+                        }
+                    }
+
+                    if (canPlace) {
+                        const coords = [];
+                        for (let i = 0; i < word.length; i++) {
+                            const r = row + (isVertical ? i : 0);
+                            const c = col + (isVertical ? 0 : i);
+                            grid[r][c] = word[i];
+                            coords.push({r, c});
+                        }
+                        placedWords.push({ word, coords });
+                        placed = true;
+                    }
+                }
+            });
+
+            // Gitter mit Zufallsbuchstaben füllen
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (grid[r][c] === '') {
+                        grid[r][c] = cyrillic[Math.floor(Math.random() * cyrillic.length)];
+                    }
+                }
+            }
+
+            // Gitter zeichnen
+            const gridEl = document.getElementById('grid');
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.innerText = grid[r][c];
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    cell.onclick = () => onCellClick(r, c, cell);
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function onCellClick(r, c, cell) {
+            if (cell.classList.contains('found')) return;
+
+            if (!firstClick) {
+                firstClick = { r, c, cell };
+                cell.classList.add('selected');
+            } else {
+                const start = firstClick;
+                const end = { r, c, cell };
+                
+                checkWord(start, end);
+                
+                start.cell.classList.remove('selected');
+                firstClick = null;
+            }
+        }
+
+        function checkWord(start, end) {
+            placedWords.forEach(pw => {
+                const head = pw.coords[0];
+                const tail = pw.coords[pw.coords.length - 1];
+
+                const matchNormal = (start.r === head.r && start.c === head.c && end.r === tail.r && end.c === tail.c);
+                const matchReverse = (end.r === head.r && end.c === head.c && start.r === tail.r && start.c === tail.c);
+
+                if (matchNormal || matchReverse) {
+                    markAsFound(pw);
+                }
+            });
+        }
+
+        function markAsFound(pw) {
+            const wordItem = document.getElementById('word-' + pw.word);
+            if (wordItem.classList.contains('found')) return;
+
+            pw.coords.forEach(coord => {
+                const cell = document.querySelector(`.cell[data-r="${coord.r}"][data-c="${coord.c}"]`);
+                cell.classList.add('found');
+            });
+
+            wordItem.classList.add('found');
+            wordsFoundCount++;
+
+            if (wordsFoundCount === words.length) {
+                setTimeout(() => alert("Herzlichen Glückwunsch! Du hast alle Wörter gefunden."), 300);
+            }
+        }
+
+        function showAllSolutions() {
+            placedWords.forEach(pw => markAsFound(pw));
+        }
+
+        init();
+    </script>
+</body>
+</html>
