@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lückentext: Sofort-Feedback</title>
+    <style>
+        :root {
+            --primary-blue: #3f51b5;
+            --success-green: #2e7d32;
+            --error-red: #d32f2f;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            max-width: 700px;
+        }
+
+        .story-container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 850px;
+            line-height: 1.8;
+            font-size: 1.2rem;
+        }
+
+        /* Container für eine Lücke und ihr Feedback */
+        .q-block {
+            display: inline-block;
+            position: relative;
+            margin: 5px 0;
+        }
+
+        select {
+            font-size: 1.1rem;
+            padding: 6px 30px 6px 12px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            background-color: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            border-color: var(--primary-blue);
+            outline: none;
+        }
+
+        /* Zustandsfarben */
+        select.correct {
+            border-color: var(--success-green);
+            background-color: #e8f5e9;
+            color: var(--success-green);
+        }
+
+        select.wrong {
+            border-color: var(--error-red);
+            background-color: #ffebee;
+            color: var(--error-red);
+        }
+
+        /* Feedback-Text-Stil */
+        .feedback-msg {
+            display: block;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-top: 5px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: none; /* Standardmäßig versteckt */
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .feedback-msg.show {
+            display: block;
+        }
+
+        .msg-correct {
+            background-color: #e8f5e9;
+            color: var(--success-green);
+            border-left: 4px solid var(--success-green);
+        }
+
+        .msg-wrong {
+            background-color: #ffebee;
+            color: var(--error-red);
+            border-left: 4px solid var(--error-red);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .restart-area {
+            margin-top: 40px;
+        }
+
+        .btn-restart {
+            padding: 12px 30px;
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Mobile Optimierung */
+        @media (max-width: 600px) {
+            .story-container { padding: 20px; font-size: 1.1rem; }
+            .q-block { display: block; width: 100%; margin: 10px 0; }
+            select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Arbeitstag-Lückentext</h1>
+        <p>Wähle die richtige Form. Das Feedback erscheint sofort.</p>
+    </div>
+
+    <div class="story-container">
+        Привет! Сегодня был длинный день. Сначала я ехала 
+        <div class="q-block">
+            <select onchange="validate(this, 'в метро', 'q1')">
+                <option value="">...</option>
+                <option value="в метро">в метро</option>
+                <option value="на метро">на метро</option>
+            </select>
+            <div id="q1" class="feedback-msg"></div>
+        </div> 
+        на работу. Там я встретила подругу. Она тоже работает в офисе. Мы решили купить подарок нашей 
+        <div class="q-block">
+            <select onchange="validate(this, 'коллеге', 'q2')">
+                <option value="">...</option>
+                <option value="коллеге">коллеге</option>
+                <option value="коллегу">коллегу</option>
+            </select>
+            <div id="q2" class="feedback-msg"></div>
+        </div>. 
+        Потом мы много работали: писали письма, звонили клиентам 
+        <div class="q-block">
+            <select onchange="validate(this, 'и так далее', 'q3')">
+                <option value="">...</option>
+                <option value="и так далее">и так далее</option>
+                <option value="и так дальше">и так дальше</option>
+            </select>
+            <div id="q3" class="feedback-msg"></div>
+        </div>. 
+        Я хочу стать директором — это моя 
+        <div class="q-block">
+            <select onchange="validate(this, 'цель', 'q4')">
+                <option value="">...</option>
+                <option value="цель">цель</option>
+                <option value="целя">целя</option>
+            </select>
+            <div id="q4" class="feedback-msg"></div>
+        </div>. 
+        Сегодня мне 
+        <div class="q-block">
+            <select onchange="validate(this, 'повезло', 'q5')">
+                <option value="">...</option>
+                <option value="повезло">повезло</option>
+                <option value="было повезло">было повезло</option>
+            </select>
+            <div id="q5" class="feedback-msg"></div>
+        </div>, потому что не было пробок. 
+        В офисе 
+        <div class="q-block">
+            <select onchange="validate(this, 'нельзя', 'q6')">
+                <option value="">...</option>
+                <option value="нельзя">нельзя</option>
+                <option value="не можно">не можно</option>
+            </select>
+            <div id="q6" class="feedback-msg"></div>
+        </div> громко разговаривать. 
+        Вечером я пришла домой. Я очень 
+        <div class="q-block">
+            <select onchange="validate(this, 'устала', 'q7')">
+                <option value="">...</option>
+                <option value="устала">устала</option>
+                <option value="была устала">была устала</option>
+            </select>
+            <div id="q7" class="feedback-msg"></div>
+        </div>. 
+        Я посмотрела фильм и 
+        <div class="q-block">
+            <select onchange="validate(this, 'также', 'q8')">
+                <option value="">...</option>
+                <option value="также">также</option>
+                <option value="тоже">тоже</option>
+            </select>
+            <div id="q8" class="feedback-msg"></div>
+        </div> немного почитала.
+    </div>
+
+    <div class="restart-area">
+        <button class="btn-restart" onclick="location.reload()">Neustart</button>
+    </div>
+
+    <script>
+        const explanations = {
+            q1: "Wenn du dich körperlich im Fahrzeug befindest, nutzt du die Präposition в (в метро).",
+            q2: "Das Wort коллега wird im Dativ wie ein weibliches Wort auf -а gebeugt: коллеге.",
+            q3: "Die feste Wendung für „und so weiter“ lautet immer и так далее.",
+            q4: "Das Wort цель (Ziel) ist im Russischen immer weiblich (моя цель).",
+            q5: "In der Konstruktion für „Glück haben“ wird kein Hilfsverb (быть) verwendet.",
+            q6: "Das Wort „не можно“ existiert nicht. Für Verbote nutzt man immer нельзя.",
+            q7: "Für den aktuellen Zustand nutzt man die Kurzform устал/устала ohne Hilfsverb.",
+            q8: "Bei Aufzählungen über dich selbst nutzt man также. Тоже vergleicht Personen."
+        };
+
+        function validate(selectElement, correctAnswer, feedbackId) {
+            const feedbackDiv = document.getElementById(feedbackId);
+            const selectedValue = selectElement.value;
+
+            if (selectedValue === "") {
+                selectElement.className = "";
+                feedbackDiv.className = "feedback-msg";
+                feedbackDiv.innerText = "";
+                return;
+            }
+
+            const isCorrect = (selectedValue === correctAnswer);
+
+            if (isCorrect) {
+                selectElement.className = "correct";
+                feedbackDiv.innerText = "Richtig! ✓ " + explanations[feedbackId];
+                feedbackDiv.className = "feedback-msg show msg-correct";
+            } else {
+                selectElement.className = "wrong";
+                feedbackDiv.innerText = "Nicht ganz... ✕ " + explanations[feedbackId];
+                feedbackDiv.className = "feedback-msg show msg-wrong";
+            }
+        }
+    </script>
+</body>
+</html>
