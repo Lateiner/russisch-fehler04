@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Hörverstehen: Fehler vermeiden</title>
+    <style>
+        :root {
+            --primary-color: #3f51b5;
+            --secondary-color: #f8f9fa;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            color: var(--text-color);
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .audio-section {
+            margin: 30px 0;
+        }
+
+        .play-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            font-size: 36px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 5px 15px rgba(63, 81, 181, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        .play-btn:hover {
+            background-color: #303f9f;
+            transform: scale(1.05);
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .tiles-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        @media (min-width: 480px) {
+            .tiles-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .tile {
+            background: var(--secondary-color);
+            border: 2px solid #dee2e6;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 70px;
+            user-select: none;
+            line-height: 1.3;
+        }
+
+        .tile:hover {
+            border-color: var(--primary-color);
+            background-color: #f1f3ff;
+        }
+
+        .tile.correct {
+            background-color: #e8f5e9;
+            border-color: var(--success-color);
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .tile.wrong {
+            background-color: #ffebee;
+            border-color: var(--error-color);
+            color: var(--error-color);
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .feedback-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .feedback-box h3 { margin-top: 0; }
+
+        .next-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .progress-text {
+            margin-top: 25px;
+            font-weight: bold;
+            color: #6c757d;
+        }
+
+        .restart-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+        }
+
+        .restart-link:hover {
+            border-bottom-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Hör-Quiz</h1>
+            <p>Höre den Satz und wähle die richtige Kachel aus.</p>
+        </div>
+
+        <div class="audio-section">
+            <button class="play-btn" onclick="playAudio()">🔊</button>
+        </div>
+
+        <div class="tiles-grid" id="tiles-container">
+            <!-- Kacheln werden dynamisch erzeugt -->
+        </div>
+
+        <div id="progress" class="progress-text">
+            Satz 1 von 10
+        </div>
+        
+        <div class="restart-link" onclick="location.reload()">Übung neu starten</div>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="feedback-box">
+            <h3 id="feedback-title">Ergebnis</h3>
+            <p id="explanation" style="line-height: 1.5; color: #444; margin: 20px 0;"></p>
+            <button class="next-btn" onclick="closeOverlay()">Nächste Frage</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            { c: "Мне повезло", d: ["Мне было повезло", "Меня повезло", "Я повезло"], e: "Richtig! Bei „Glück haben“ (повезло) wird kein Hilfsverb „было“ verwendet." },
+            { c: "Я устал", d: ["Я был устал", "Я есть устал", "Я устал был"], e: "Korrekt! Für den aktuellen Zustand nutzt man einfach „Я устал“." },
+            { c: "Здесь нельзя курить", d: ["Здесь не можно курить", "Здесь не нельзя курить", "Здесь нет курить"], e: "Sehr gut! „Не можно“ existiert nicht, man sagt „нельзя“." },
+            { c: "Я сейчас в метро", d: ["Я сейчас на метро", "Я сейчас у метро", "Я сейчас к метро"], e: "Richtig! Wenn du dich im Fahrzeug befindest, nutzt du die Präposition „в“." },
+            { c: "И так далее", d: ["И так дальше", "И так далее далее", "И так как далее"], e: "Die feste Redewendung für „und so weiter“ ist „и так далее“." },
+            { c: "Это моя цель", d: ["Это мой цель", "Это моё цель", "Это мои цель"], e: "Genau! „Цель“ (Ziel) ist im Russischen weiblich, daher „моя“." },
+            { c: "Она моя коллега", d: ["Она мой коллега", "Она моё коллега", "Она мою коллега"], e: "Korrekt! Da es eine Frau ist, muss das Pronomen weiblich sein: „моя коллеga“." },
+            { c: "Это моя проблема", d: ["Это мой проблема", "Это моё проблема", "Это мои проблема"], e: "Richtig! „Проблема“ endet auf -а und ist somit weiblich." },
+            { c: "Я прочитал много книг", d: ["Я прочитал многие книг", "Я прочитал многое книг", "Я прочитал многий книг"], e: "Nach „много“ (Menge) folgt der Genitiv Plural: „книг“." },
+            { c: "Также я люблю спорт", d: ["Я тоже люблю спорт (Aufzählung)", "Я также люблю спорт", "Я люблю спорт тоже"], e: "Bei Aufzählungen über dich selbst nutzt man „также“. (Hinweis: „Тоже“ vergleicht Personen)." }
+        ];
+
+        let currentIndex = 0;
+        let selectedMaleVoice = null;
+
+        function loadVoices() {
+            let voices = window.speechSynthesis.getVoices();
+            // Hintergrund-Suche nach einer russischen männlichen Stimme
+            selectedMaleVoice = voices.find(v => v.lang.startsWith('ru') && 
+                (v.name.includes('Pavel') || v.name.includes('Maxim') || v.name.includes('Dmitry') || v.name.includes('Male')));
+            
+            if (!selectedMaleVoice) {
+                selectedMaleVoice = voices.find(v => v.lang.startsWith('ru'));
+            }
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        function playAudio() {
+            const text = quizData[currentIndex].c;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = selectedMaleVoice;
+            utterance.rate = 0.85; 
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function loadQuestion() {
+            const q = quizData[currentIndex];
+            const container = document.getElementById('tiles-container');
+            container.innerHTML = '';
+            document.getElementById('progress').innerText = `Satz ${currentIndex + 1} von ${quizData.length}`;
+
+            let allOptions = [q.c, ...q.d];
+            shuffle(allOptions);
+
+            allOptions.forEach(text => {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.innerText = text;
+                tile.onclick = () => checkAnswer(text, tile);
+                container.appendChild(tile);
+            });
+        }
+
+        function checkAnswer(selected, element) {
+            const correct = quizData[currentIndex].c;
+            const overlay = document.getElementById('overlay');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const explanation = document.getElementById('explanation');
+
+            if (selected === correct) {
+                element.classList.add('correct');
+                feedbackTitle.innerText = "Richtig! ✓";
+                feedbackTitle.style.color = "var(--success-color)";
+            } else {
+                element.classList.add('wrong');
+                feedbackTitle.innerText = "Nicht ganz... ✕";
+                feedbackTitle.style.color = "var(--error-color)";
+                const tiles = document.querySelectorAll('.tile');
+                tiles.forEach(t => { if(t.innerText === correct) t.classList.add('correct'); });
+            }
+
+            explanation.innerText = quizData[currentIndex].e;
+            setTimeout(() => { overlay.style.display = 'flex'; }, 400);
+        }
+
+        function closeOverlay() {
+            document.getElementById('overlay').style.display = 'none';
+            currentIndex++;
+            if (currentIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                alert("Übung beendet! Du hast alle Sätze gehört.");
+                location.reload();
+            }
+        }
+
+        // Initialisierung beim Start
+        loadVoices();
+        loadQuestion();
+    </script>
+</body>
+</html>
