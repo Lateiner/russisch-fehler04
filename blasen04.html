@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: 8 Sprechblasen-Szenen</title>
+    <style>
+        :root {
+            --primary-color: #673ab7;
+            --male-blue: #2196f3;
+            --female-pink: #e91e63;
+            --bg-light: #f4f7f6;
+            --text-dark: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            box-sizing: border-box;
+            color: var(--text-dark);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Comic-Sprechblase */
+        .bubble-container {
+            width: 100%;
+            min-height: 120px;
+            background: #ffffff;
+            border: 3px solid #333;
+            border-radius: 25px;
+            padding: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 1.2rem;
+            text-align: center;
+            box-sizing: border-box;
+            margin-bottom: 30px;
+        }
+
+        .bubble-container::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 20px 20px 0;
+            border-style: solid;
+            border-color: #333 transparent transparent;
+        }
+
+        .drop-target {
+            min-width: 90px;
+            height: 35px;
+            border-bottom: 3px dashed var(--primary-color);
+            background: #f0f0f0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            transition: all 0.2s;
+        }
+
+        .drop-target.highlight {
+            background: #d1c4e9;
+            transform: scale(1.05);
+        }
+
+        /* Charaktere */
+        .character-display {
+            font-size: 6rem;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
+            user-select: none;
+        }
+
+        /* Optionen */
+        .options-pool {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .option-card {
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 8px rgba(103, 58, 183, 0.3);
+            touch-action: none;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+
+        .option-card:active { transform: scale(0.95); }
+
+        /* Buttons */
+        .controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn-restart { background: #546e7a; color: white; }
+        .btn-solution { background: #fb8c00; color: white; }
+
+        /* Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .feedback-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        @media (max-width: 500px) {
+            .bubble-container { font-size: 1rem; }
+            .character-display { font-size: 4.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Sprechblasen-Zuordnung</h1>
+        <p>Klicke oder ziehe das richtige Wort in die Sprechblase!</p>
+    </div>
+
+    <div class="game-container">
+        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+        
+        <div class="bubble-container">
+            <span id="txt-before"></span>
+            <div class="drop-target" id="target"></div>
+            <span id="txt-after"></span>
+        </div>
+
+        <div class="character-display" id="char">👨‍💼</div>
+
+        <div class="options-pool" id="options">
+            <!-- Buttons kommen hier rein -->
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-restart" onclick="restart()">Neustart</button>
+            <button class="btn btn-solution" onclick="showSolution()">Lösung</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="feedback-box">
+            <h3 id="feedback-title">Richtig! ✓</h3>
+            <p id="explanation" style="line-height: 1.5; margin: 20px 0;"></p>
+            <button class="btn btn-restart" style="background: var(--primary-color);" onclick="next()">Nächste Szene</button>
+        </div>
+    </div>
+
+    <script>
+        const scenes = [
+            { b: "Я купил подарок", a: "коллеге.", char: "👨‍💼", opts: ["моему", "моей"], ans: "моему", expl: "Der Kollege ist ein Mann. Im Dativ (Wem?) heißt es für Männer: моему коллеге." },
+            { b: "Я купил подарок", a: "коллеге.", char: "👩‍💼", opts: ["моему", "моей"], ans: "моей", expl: "Die Kollegin ist eine Frau. Im Dativ heißt es für Frauen: моей коллеге." },
+            { b: "Это", a: "коллега.", char: "👨‍💼", opts: ["мой", "моя"], ans: "мой", expl: "Im Nominativ (Wer ist das?) sagen wir für einen Mann: мой коллега." },
+            { b: "Это", a: "коллега.", char: "👩‍💼", opts: ["мой", "моя"], ans: "моя", expl: "Im Nominativ sagen wir für eine Frau: моя коллега." },
+            { b: "Где", a: "коллега?", char: "👨‍💼", opts: ["наш", "наша"], ans: "наш", expl: "Das Pronomen наш (unser) bezieht sich hier auf einen männlichen Kollegen." },
+            { b: "Где", a: "коллега?", char: "👩‍💼", opts: ["наш", "наша"], ans: "наша", expl: "Das Pronomen наша (unsere) bezieht sich auf eine weibliche Kollegin." },
+            { b: "Я звоню", a: "коллеге.", char: "👨‍💼", opts: ["новому", "новой"], ans: "новому", expl: "Adjektiv im Dativ für einen Mann: новому коллеге." },
+            { b: "Я звоню", a: "коллеге.", char: "👩‍💼", opts: ["новому", "новой"], ans: "новой", expl: "Adjektiv im Dativ für eine Frau: новой коллеге." }
+        ];
+
+        let current = 0;
+        let activeDrag = null;
+
+        function load() {
+            const s = scenes[current];
+            document.getElementById('txt-before').innerText = s.b;
+            document.getElementById('txt-after').innerText = s.a;
+            document.getElementById('char').innerText = s.char;
+            document.getElementById('target').innerText = "";
+            document.getElementById('target').style.background = "";
+            document.getElementById('progress').style.width = ((current+1)/scenes.length*100) + "%";
+
+            const pool = document.getElementById('options');
+            pool.innerHTML = '';
+            s.opts.forEach(o => {
+                const div = document.createElement('div');
+                div.className = 'option-card';
+                div.innerText = o;
+                setupInteractions(div);
+                pool.appendChild(div);
+            });
+        }
+
+        function setupInteractions(el) {
+            let startX, startY;
+
+            // Drag-Logik (Pointer Events)
+            el.addEventListener('pointerdown', (e) => {
+                activeDrag = el;
+                el.setPointerCapture(e.pointerId);
+                const rect = el.getBoundingClientRect();
+                startX = e.clientX; startY = e.clientY;
+                el.style.zIndex = "100";
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (!activeDrag) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                el.style.transform = `translate(${dx}px, ${dy}px)`;
+                checkHit(e.clientX, e.clientY);
+            });
+
+            el.addEventListener('pointerup', (e) => {
+                if (!activeDrag) return;
+                const target = document.getElementById('target');
+                const rect = target.getBoundingClientRect();
+                if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) {
+                    validate(el.innerText);
+                } else {
+                    el.style.transform = "translate(0,0)";
+                }
+                activeDrag = null;
+                target.classList.remove('highlight');
+            });
+
+            // Einfacher Klick für Mobile
+            el.addEventListener('click', () => validate(el.innerText));
+        }
+
+        function checkHit(x, y) {
+            const t = document.getElementById('target');
+            const r = t.getBoundingClientRect();
+            if (x > r.left && x < r.right && y > r.top && y < r.bottom) t.classList.add('highlight');
+            else t.classList.remove('highlight');
+        }
+
+        function validate(val) {
+            const s = scenes[current];
+            const t = document.getElementById('target');
+            t.innerText = val;
+            if (val === s.ans) {
+                showFeedback(true);
+            } else {
+                t.style.background = "#ffebee";
+                setTimeout(() => { t.innerText = ""; t.style.background = ""; }, 600);
+            }
+        }
+
+        function showFeedback(correct) {
+            const over = document.getElementById('overlay');
+            document.getElementById('feedback-title').innerText = correct ? "Richtig! ✓" : "Lösung";
+            document.getElementById('feedback-title').style.color = correct ? "#4caf50" : "#fb8c00";
+            document.getElementById('explanation').innerText = scenes[current].expl;
+            over.style.display = 'flex';
+        }
+
+        function next() {
+            document.getElementById('overlay').style.display = 'none';
+            current++;
+            if (current >= scenes.length) {
+                alert("Super! Du hast alle 8 Sprechblasen richtig zugeordnet.");
+                restart();
+            } else { load(); }
+        }
+
+        function showSolution() {
+            validate(scenes[current].ans);
+            showFeedback(false);
+        }
+
+        function restart() {
+            current = 0;
+            load();
+        }
+
+        load();
+    </script>
+</body>
+</html>
