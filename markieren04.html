@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: 8 Genus-Fehler finden</title>
+    <style>
+        :root {
+            --primary-color: #673ab7;
+            --success-color: #2e7d32;
+            --error-color: #d32f2f;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            max-width: 700px;
+        }
+
+        .stats {
+            font-weight: bold;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            background: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .text-container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 800px;
+            line-height: 2.3;
+            font-size: 1.3rem;
+            text-align: left;
+            user-select: none;
+        }
+
+        /* Styling für die einzelnen Wörter */
+        .word {
+            padding: 2px 5px;
+            margin: 0 1px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            display: inline-block;
+        }
+
+        @media (hover: hover) {
+            .word:hover {
+                background-color: #f0f0f0;
+                border-bottom-color: var(--primary-color);
+            }
+        }
+
+        /* Korrekt markierter Fehler */
+        .word.found {
+            background-color: #e8f5e9;
+            color: var(--success-color);
+            border-bottom: 2px solid var(--success-color);
+            font-weight: bold;
+        }
+
+        /* Falsch angeklicktes Wort */
+        .word.miss {
+            background-color: #ffebee;
+            color: var(--error-color);
+            border-bottom: 2px solid var(--error-color);
+        }
+
+        /* Erklärungsbereich */
+        .explanation-box {
+            margin-top: 30px;
+            width: 100%;
+            max-width: 800px;
+            display: none;
+        }
+
+        .expl-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 5px solid var(--success-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            animation: fadeIn 0.4s ease-out;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .controls {
+            margin: 40px 0;
+        }
+
+        .btn-restart {
+            padding: 15px 40px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(103, 58, 183, 0.3);
+        }
+
+        /* Mobile Optimierung */
+        @media (max-width: 600px) {
+            .text-container { padding: 20px; font-size: 1.1rem; line-height: 2.6; }
+            .header h1 { font-size: 1.4rem; }
+            .stats { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Genus-Detektiv</h1>
+        <p>Klicke auf die <b>8 Wörter</b> im Text, die ein falsches grammatikalisches Geschlecht haben!</p>
+    </div>
+
+    <div class="stats">
+        Fehler gefunden: <span id="counter">0</span> / 8
+    </div>
+
+    <div class="text-container" id="text-content">
+        <!-- Text wird dynamisch geladen -->
+    </div>
+
+    <div class="explanation-box" id="explanation-box">
+        <h3 id="feedback-title">Gefundene Fehler & Erklärungen:</h3>
+        <div id="expl-list"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-restart" onclick="location.reload()">Neustart</button>
+    </div>
+
+    <script>
+        const storyData = [
+            { text: "Привет!", err: null },
+            { text: "У", err: null },
+            { text: "меня", err: null },
+            { text: "есть", err: null },
+            { text: "мой", err: "цель", expl: "Falsches Genus: Das Wort цель (Ziel) ist weiblich. Es muss „моя цель“ heißen." },
+            { text: "цель.", err: null },
+            { text: "Это", err: null },
+            { text: "мой", err: "проблема,", expl: "Falsches Genus: Das Wort проблема endet auf -а und ist somit weiblich. Richtig ist „моя проблема“." },
+            { text: "проблема,", err: null },
+            { text: "но", err: null },
+            { text: "сегодня", err: null },
+            { text: "появилась", err: null },
+            { text: "хороший", err: "идея.", expl: "Falsches Genus: Das Wort идея (Idee) ist weiblich. Das Adjektiv muss die Endung -ая haben: „хорошая идея“." },
+            { text: "идея.", err: null },
+            { text: "Я", err: null },
+            { text: "позвонила", err: null },
+            { text: "моей", err: null },
+            { text: "подруге.", err: null },
+            { text: "Она", err: null },
+            { text: "мой", err: "коллега.", expl: "Falsches Genus: Da die Person weiblich ist (подруга), muss das Pronomen ebenfalls weiblich sein: „моя коллега“." },
+            { text: "коллега.", err: null },
+            { text: "Она", err: null },
+            { text: "сказала,", err: null },
+            { text: "что", err: null },
+            { text: "это", err: null },
+            { text: "был", err: "ошибка.", expl: "Falsches Genus: Das Wort ошибка (Fehler) ist weiblich. Das Verb muss ebenfalls weiblich sein: „была ошибка“." },
+            { text: "ошибка.", err: null },
+            { text: "Потом", err: null },
+            { text: "я", err: null },
+            { text: "вышла", err: null },
+            { text: "на", err: null },
+            { text: "мой", err: "остановка.", expl: "Falsches Genus: Das Wort остановка (Haltestelle) ist weiblich. Richtig ist „моя остановка“." },
+            { text: "остановка.", err: null },
+            { text: "Там", err: null },
+            { text: "я", err: null },
+            { text: "встретила", err: null },
+            { text: "Иру.", err: null },
+            { text: "У", err: null },
+            { text: "неё", err: null },
+            { text: "новый", err: "работа.", expl: "Falsches Genus: Das Wort работа (Arbeit) endet auf -а und ist weiblich. Richtig ist „новая работа“." },
+            { text: "работа.", err: null },
+            { text: "Это", err: null },
+            { text: "её", err: null },
+            { text: "большой", err: "надежда.", expl: "Falsches Genus: Das Wort надежда (Hoffnung) ist weiblich. Es muss „большая надежда“ heißen." },
+            { text: "надежда.", err: null }
+        ];
+
+        let foundCount = 0;
+        const totalErrors = 8;
+        const foundIndices = new Set();
+
+        function init() {
+            const container = document.getElementById('text-content');
+            storyData.forEach((item, index) => {
+                const span = document.createElement('span');
+                span.className = 'word';
+                span.innerText = item.text + " ";
+                span.onclick = () => handleClick(index, span);
+                container.appendChild(span);
+            });
+        }
+
+        function handleClick(index, element) {
+            const item = storyData[index];
+
+            if (item.err) {
+                if (!foundIndices.has(index)) {
+                    foundIndices.add(index);
+                    element.classList.add('found');
+                    foundCount++;
+                    document.getElementById('counter').innerText = foundCount;
+                    showExpl(item.expl);
+                    
+                    if (foundCount === totalErrors) {
+                        document.getElementById('feedback-title').innerText = "Hervorragend! Alle 8 Genus-Fehler wurden gefunden:";
+                    }
+                }
+            } else {
+                if (!element.classList.contains('miss') && !element.classList.contains('found')) {
+                    element.classList.add('miss');
+                    setTimeout(() => element.classList.remove('miss'), 500);
+                }
+            }
+        }
+
+        function showExpl(text) {
+            const box = document.getElementById('explanation-box');
+            const list = document.getElementById('expl-list');
+            box.style.display = 'block';
+
+            const div = document.createElement('div');
+            div.className = 'expl-item';
+            div.innerText = text;
+            list.appendChild(div);
+        }
+
+        init();
+    </script>
+</body>
+</html>
