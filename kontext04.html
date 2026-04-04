@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: Kontext-Check</title>
+    <style>
+        :root {
+            --primary-blue: #1a73e8;
+            --success-green: #2e7d32;
+            --error-red: #d32f2f;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #202124;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-top: 20px;
+            box-sizing: border-box;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e8eaed;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-blue);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .situation-box {
+            background: #f1f3f4;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 5px solid var(--primary-blue);
+        }
+
+        .situation-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 1rem;
+            color: var(--primary-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .situation-text {
+            font-size: 1.15rem;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #dadce0;
+            padding: 16px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .option-btn:hover {
+            border-color: var(--primary-blue);
+            background-color: #f8faff;
+        }
+
+        .option-btn.correct {
+            border-color: var(--success-green);
+            background-color: #e6f4ea;
+            color: var(--success-green);
+            font-weight: bold;
+        }
+
+        .option-btn.wrong {
+            border-color: var(--error-red);
+            background-color: #fce8e6;
+            color: var(--error-red);
+        }
+
+        /* Feedback Bereich */
+        .feedback-area {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .explanation {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .next-btn {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Ergebnis-Screen */
+        .result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 8px solid var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 20px auto;
+            color: var(--primary-blue);
+        }
+
+        /* Mobile Optimierung */
+        @media (max-width: 480px) {
+            .quiz-container { padding: 20px; }
+            .situation-text { font-size: 1rem; }
+            .option-btn { font-size: 1rem; padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container" id="quiz-box">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="situation-box">
+            <h3>Situation</h3>
+            <div class="situation-text" id="situation-text">Wird geladen...</div>
+        </div>
+
+        <div class="options-grid" id="options-grid">
+            <!-- Buttons werden hier eingefügt -->
+        </div>
+
+        <div class="feedback-area" id="feedback-area">
+            <div class="feedback-title" id="feedback-title"></div>
+            <div class="explanation" id="explanation"></div>
+            <button class="next-btn" onclick="loadNext()">Nächste Situation</button>
+        </div>
+    </div>
+
+    <div class="quiz-container result-screen" id="result-screen">
+        <h2>Übung beendet!</h2>
+        <p>Deine Punktzahl:</p>
+        <div class="score-circle" id="final-score">0</div>
+        <p id="result-msg"></p>
+        <button class="next-btn" onclick="location.reload()">Nochmal starten</button>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                situation: "Du sitzt gerade in der Metro. Dein Freund ruft an und fragt: „Где ты?“ (Wo bist du?). Was antwortest du?",
+                options: ["Я в метро", "Я на метро", "Я еду на метро"],
+                correct: 0,
+                explanation: "Wenn du dich gerade körperlich im Fahrzeug befindest (dort sitzt oder stehst), nutzt du die Präposition в. „Я на метро“ ist falsch."
+            },
+            {
+                situation: "Du stehst an einer Bushaltestelle. Jemand zündet sich eine Zigarette an, obwohl ein Verbotsschild dort hängt. Was sagst du?",
+                options: ["Здесь не можно курить", "Здесь нельзя курить", "Здесь не нельзя курить"],
+                correct: 1,
+                explanation: "„Не можно“ existiert im Russischen nicht. Für Verbote nutzt man immer das Wort нельзя."
+            },
+            {
+                situation: "Du hast gerade im Lotto gewonnen und bist total glücklich. Was sagst du zu deinen Freunden?",
+                options: ["Мне было повезло", "Мне повезло", "Я был везучий"],
+                correct: 1,
+                explanation: "In der Konstruktion für „Glück haben“ (повезло) wird kein Hilfsverb für die Vergangenheit (было) verwendet."
+            },
+            {
+                situation: "Du kommst nach einem sehr anstrengenden 12-Stunden-Arbeitstag nach Hause. Wie drückst du dein aktuelles Gefühl aus?",
+                options: ["Я был устал", "Я был уставший", "Я устал"],
+                correct: 2,
+                explanation: "Für den aktuellen Moment nutzt man einfach die Kurzform устал (m.) oder устала (w.). Ein Hilfsverb wird nicht benötigt."
+            },
+            {
+                situation: "Du erzählst, was du heute alles gemacht hast: „Я гулял, пил кофе...“ Du möchtest „und so weiter“ hinzufügen. Was sagst du?",
+                options: ["и так дальше", "и так далее", "и далее"],
+                correct: 1,
+                explanation: "Die feste Redewendung für „und so weiter“ lautet immer и так далее. Das Wort дальше bedeutet zwar „weiter“, passt hier aber nicht."
+            },
+            {
+                situation: "Du stellst deine neue Arbeitskollegin (eine Frau) vor. Was sagst du?",
+                options: ["Это мой коллега", "Это моя коллега", "Это мой коллегу"],
+                correct: 1,
+                explanation: "Das Wort коллеga kann männlich oder weiblich sein. Da es eine Frau ist, musst du das weibliche Pronomen моя verwenden."
+            },
+            {
+                situation: "Jemand fragt dich, warum du so fleißig Russisch lernst. Du antwortest, dass dies dein großes Ziel ist. Was sagst du?",
+                options: ["Это мой цель", "Это моё цель", "Это моя цель"],
+                correct: 2,
+                explanation: "Das Wort цель (Ziel) ist im Russischen immer weiblich. Daher musst du moja цель sagen."
+            },
+            {
+                situation: "Du sagst: „Ich mag Pizza.“ Nun möchtest du hinzufügen: „Ich mag auch Pasta.“ (Aufzählung über dich selbst).",
+                options: ["Я тоже люблю пасту", "Также я люблю пасту", "Я люблю пасту тоже"],
+                correct: 1,
+                explanation: "Wenn du mehrere Dinge über dich selbst aufzählst, nutzt du также. „Тоже“ nutzt du nur, wenn du dich mit einer anderen Person vergleichst."
+            }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+        let answered = false;
+
+        function initQuiz() {
+            showQuestion();
+        }
+
+        function showQuestion() {
+            answered = false;
+            const q = questions[currentIndex];
+            document.getElementById('situation-text').innerText = q.situation;
+            document.getElementById('progress').style.width = ((currentIndex / questions.length) * 100) + "%";
+            document.getElementById('feedback-area').style.display = 'none';
+            
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(index, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(idx, btn) {
+            if (answered) return;
+            answered = true;
+            
+            const q = questions[currentIndex];
+            const allBtns = document.querySelectorAll('.option-btn');
+            
+            if (idx === q.correct) {
+                btn.classList.add('correct');
+                document.getElementById('feedback-title').innerText = "Richtig! ✓";
+                document.getElementById('feedback-title').style.color = "var(--success-green)";
+                score++;
+            } else {
+                btn.classList.add('wrong');
+                allBtns[q.correct].classList.add('correct');
+                document.getElementById('feedback-title').innerText = "Nicht ganz... ✕";
+                document.getElementById('feedback-title').style.color = "var(--error-red)";
+            }
+
+            document.getElementById('explanation').innerText = q.explanation;
+            document.getElementById('feedback-area').style.display = 'block';
+        }
+
+        function loadNext() {
+            currentIndex++;
+            if (currentIndex < questions.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-box').style.display = 'none';
+            const screen = document.getElementById('result-screen');
+            screen.style.display = 'block';
+            document.getElementById('final-score').innerText = score;
+            
+            let msg = "";
+            if (score === questions.length) msg = "Perfekt! Du beherrschst alle Situationen.";
+            else if (score >= questions.length / 2) msg = "Gut gemacht! Ein paar Situationen solltest du dir nochmal ansehen.";
+            else msg = "Schau dir das Video am besten nochmal an.";
+            
+            document.getElementById('result-msg').innerText = msg;
+        }
+
+        initQuiz();
+    </script>
+</body>
+</html>
