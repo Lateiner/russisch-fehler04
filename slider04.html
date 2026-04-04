@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lern-Slider: Vorher vs. Nachher</title>
+    <style>
+        :root {
+            --wrong-red: #ff5252;
+            --correct-green: #4caf50;
+            --info-blue: #2196f3;
+            --bg-color: #f4f7f9;
+            --text-dark: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--text-dark);
+            overflow-x: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        /* Slider-Bereich */
+        .slider-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            background-color: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            user-select: none;
+            cursor: ew-resize;
+            touch-action: none;
+        }
+
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        /* Ebene UNTEN (Das Ziel/Richtig) */
+        .correct-layer {
+            background-color: #e8f5e9;
+            color: var(--correct-green);
+        }
+
+        /* Ebene OBEN (Der Fehler) */
+        .wrong-layer {
+            background-color: #ffebee;
+            color: var(--wrong-red);
+            z-index: 2;
+            width: 50%; /* Startposition */
+            border-right: 4px solid white;
+        }
+
+        .label {
+            position: absolute;
+            top: 20px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .wrong-label { background: var(--wrong-red); left: 20px; }
+        .correct-label { background: var(--correct-green); right: 20px; }
+
+        .sentence {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .explanation {
+            font-size: 1.1rem;
+            color: #444;
+            margin-top: 25px;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        /* Schiebe-Griff */
+        .handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            background: white;
+            z-index: 3;
+            transform: translateX(-50%);
+        }
+
+        .handle-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+
+        /* Steuerung */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            color: white;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        .btn-nav { background-color: var(--text-dark); }
+        .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-restart { background-color: var(--info-blue); }
+
+        .counter {
+            font-weight: bold;
+            font-size: 1.1rem;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* Mobile Anpassungen */
+        @media (max-width: 600px) {
+            .slider-container { height: 320px; }
+            .sentence { font-size: 1.5rem; }
+            .explanation { font-size: 0.9rem; margin-top: 15px; }
+            .btn { padding: 10px 18px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Vorher-Nachher-Vergleich</h1>
+        <p>Ziehe den Regler nach rechts, um die Korrektur zu enthüllen.</p>
+    </div>
+
+    <div class="slider-container" id="slider-box">
+        <!-- Richtig Ebene (Unten) -->
+        <div class="layer correct-layer">
+            <div class="label correct-label">Richtig</div>
+            <p class="sentence" id="correct-text">Я устал</p>
+            <p class="explanation" id="expl-text">Lade Text...</p>
+        </div>
+
+        <!-- Falsch Ebene (Oben) -->
+        <div class="layer wrong-layer" id="wrong-clip">
+            <div class="label wrong-label">Falsch</div>
+            <p class="sentence" id="wrong-text">Я был устал</p>
+        </div>
+
+        <!-- Griff -->
+        <div class="handle" id="slider-handle">
+            <div class="handle-circle">↔</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-nav" id="prev-btn" onclick="changeSentence(-1)">Zurück</button>
+        <button class="btn btn-restart" onclick="restartQuiz()">Neustart</button>
+        <button class="btn btn-nav" id="next-btn" onclick="changeSentence(1)">Nächster</button>
+    </div>
+    
+    <div style="margin-top: 15px;" class="counter">
+        Satz <span id="current-num">1</span> von 10
+    </div>
+
+    <script>
+        const quizData = [
+            { w: "Я был устал", c: "Я устал", e: "Für den aktuellen Zustand nutzt man die Kurzform устал (m.) oder устала (w.). Ein Hilfsverb wird nicht benötigt." },
+            { w: "Мне было повезло", c: "Мне повезло", e: "In der Konstruktion für „Glück haben“ (повезло) lässt man das Verb „sein“ (было) in der Vergangenheit weg." },
+            { w: "Не можно здесь курить", c: "Нельзя здесь курить", e: "„Не можно“ existiert nicht. Für Verbote nutzt man immer das Wort нельзя." },
+            { w: "Сейчас я на метро", c: "Сейчас я в метро", e: "Wenn du dich körperlich im Fahrzeug befindest, nutzt du die Präposition в." },
+            { w: "Я пил кофе и так дальше", c: "Я пил кофе и так далее", e: "Die feste Redewendung für „und so weiter“ lautet immer и так далее." },
+            { w: "Это мой цель", c: "Это моя цель", e: "Das Wort цель (Ziel) ist im Russischen immer weiblich. Daher musst du moja цель sagen." },
+            { w: "Это мой проблема", c: "Это моя проблема", e: "Das Wort проблема endet auf -а und ist somit weiblich. Richtig ist моя проблема." },
+            { w: "Она мой коллега", c: "Она моя коллега", e: "Da коллега hier eine Frau ist, muss auch das Pronomen weiblich sein: моя коллега." },
+            { w: "Многие книг", c: "Много книг", e: "Bei Mengenangaben („viele“) nutzt man много gefolgt vom Genitiv Plural." },
+            { w: "Я тоже люблю петь", c: "Также я люблю петь", e: "Wenn du mehrere Vorlieben über dich selbst aufzählst, nutzt du также." }
+        ];
+
+        let currentIndex = 0;
+        let isDragging = false;
+        
+        const sliderBox = document.getElementById('slider-box');
+        const wrongClip = document.getElementById('wrong-clip');
+        const handle = document.getElementById('slider-handle');
+
+        // Slider-Bewegung
+        function setSliderPosition(percentage) {
+            if (percentage < 0) percentage = 0;
+            if (percentage > 100) percentage = 100;
+            wrongClip.style.width = percentage + "%";
+            handle.style.left = percentage + "%";
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+            const rect = sliderBox.getBoundingClientRect();
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const x = clientX - rect.left;
+            const percentage = (x / rect.width) * 100;
+            setSliderPosition(percentage);
+        }
+
+        // Event Listener
+        sliderBox.addEventListener('mousedown', () => isDragging = true);
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', handleMove);
+
+        sliderBox.addEventListener('touchstart', () => isDragging = true);
+        window.addEventListener('touchend', () => isDragging = false);
+        window.addEventListener('touchmove', handleMove);
+
+        // Navigation
+        function updateUI() {
+            const data = quizData[currentIndex];
+            document.getElementById('wrong-text').innerText = data.w;
+            document.getElementById('correct-text').innerText = data.c;
+            document.getElementById('expl-text').innerText = data.e;
+            document.getElementById('current-num').innerText = currentIndex + 1;
+
+            document.getElementById('prev-btn').disabled = (currentIndex === 0);
+            document.getElementById('next-btn').disabled = (currentIndex === quizData.length - 1);
+            
+            // Slider zurück in die Mitte setzen für den neuen Satz
+            setSliderPosition(50);
+        }
+
+        function changeSentence(step) {
+            currentIndex += step;
+            updateUI();
+        }
+
+        function restartQuiz() {
+            currentIndex = 0;
+            updateUI();
+        }
+
+        // Start
+        updateUI();
+    </script>
+</body>
+</html>
