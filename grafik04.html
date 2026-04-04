@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Übung: Interaktives Büro</title>
+    <style>
+        :root {
+            --primary-blue: #1a73e8;
+            --success-green: #2e7d32;
+            --error-red: #d32f2f;
+            --bg-color: #f1f3f4;
+            --office-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            max-width: 700px;
+        }
+
+        /* Büro-Grafik-Container */
+        .office-map {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 16 / 9;
+            background-color: #e0e0e0;
+            border: 4px solid #5f6368;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* Hotspots */
+        .hotspot {
+            position: absolute;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .hotspot:hover { transform: scale(1.1); }
+
+        .icon { font-size: 3rem; user-select: none; }
+
+        .pulse-ring {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--primary-blue);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Positionen der Objekte */
+        #obj-tired    { top: 45%; left: 15%; }
+        #obj-smoke    { top: 10%; left: 80%; }
+        #obj-colleague { top: 40%; left: 45%; }
+        #obj-problem  { top: 60%; left: 75%; }
+        #obj-target   { top: 10%; left: 10%; }
+        #obj-luck     { top: 70%; left: 25%; }
+        #obj-bus      { top: 10%; left: 45%; }
+        #obj-list     { top: 20%; left: 65%; }
+
+        /* Modal / Aufgaben-Fenster */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .question-text { margin-bottom: 20px; font-weight: bold; font-size: 1.1rem; }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            outline: none;
+        }
+
+        select.correct { border-color: var(--success-green); background: #e8f5e9; }
+        select.wrong { border-color: var(--error-red); background: #ffebee; }
+
+        .feedback-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            margin-bottom: 20px;
+            min-height: 40px;
+        }
+
+        /* Steuerung unten */
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            color: white;
+        }
+
+        .btn-restart { background: #607d8b; }
+        .btn-solution { background: #fb8c00; }
+        .btn-close { background: var(--primary-blue); }
+
+        /* Mobile Anpassung */
+        @media (max-width: 600px) {
+            .office-map { aspect-ratio: 1 / 1.3; }
+            .icon { font-size: 2rem; }
+            #obj-smoke { top: 5%; left: 75%; }
+            #obj-bus { top: 5%; left: 35%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Interaktive Büro-Übung</h1>
+        <p>Klicke auf die pulsierenden Objekte im Büro und wähle die korrekte russische Wendung aus.</p>
+    </div>
+
+    <div class="office-map">
+        <div class="hotspot" id="obj-tired" onclick="openExercise('tired')"><div class="pulse-ring"></div><span class="icon">😫</span></div>
+        <div class="hotspot" id="obj-smoke" onclick="openExercise('smoke')"><div class="pulse-ring"></div><span class="icon">🚭</span></div>
+        <div class="hotspot" id="obj-colleague" onclick="openExercise('colleague')"><div class="pulse-ring"></div><span class="icon">👩‍💼</span></div>
+        <div class="hotspot" id="obj-problem" onclick="openExercise('problem')"><div class="pulse-ring"></div><span class="icon">💻</span></div>
+        <div class="hotspot" id="obj-target" onclick="openExercise('target')"><div class="pulse-ring"></div><span class="icon">🎯</span></div>
+        <div class="hotspot" id="obj-luck" onclick="openExercise('luck')"><div class="pulse-ring"></div><span class="icon">🍀</span></div>
+        <div class="hotspot" id="obj-bus" onclick="openExercise('bus')"><div class="pulse-ring"></div><span class="icon">🚌</span></div>
+        <div class="hotspot" id="obj-list" onclick="openExercise('list')"><div class="pulse-ring"></div><span class="icon">📋</span></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-restart" onclick="restart()">Neustart</button>
+        <button class="btn btn-solution" onclick="showAllSolutions()">Alle Lösungen</button>
+    </div>
+
+    <!-- Modal für die Übung -->
+    <div class="modal" id="exercise-modal">
+        <div class="modal-content">
+            <div class="question-text" id="question-label">Was sagst du hier?</div>
+            <select id="answer-select" onchange="checkSelection()">
+                <option value="" disabled selected>Wähle eine Antwort...</option>
+            </select>
+            <div class="feedback-text" id="feedback-label"></div>
+            <button class="btn btn-close" onclick="closeExercise()">Schließen</button>
+        </div>
+    </div>
+
+    <script>
+        const exercises = {
+            tired: {
+                q: "Situation: 'Ich bin müde' (jetzt)",
+                options: ["Я был устал", "Я устал", "Я устала (Frau)"],
+                correct: "Я устал", 
+                expl: "Für den aktuellen Zustand nutzen wir die Kurzform ohne Hilfsverb 'быть'."
+            },
+            smoke: {
+                q: "Situation: Rauchverbot",
+                options: ["Здесь нельзя курить", "Здесь не можно курить", "Здесь нет курить"],
+                correct: "Здесь нельзя курить",
+                expl: "'Не можно' existiert nicht. Für Verbote nutzen wir immer 'нельзя'."
+            },
+            colleague: {
+                q: "Situation: 'Meine Kollegin' (Frau)",
+                options: ["Мой коллега", "Моя коллега", "Моё коллега"],
+                correct: "Моя коллеga",
+                expl: "Das Wort 'коллега' ist weiblich, wenn es sich auf eine Frau bezieht."
+            },
+            problem: {
+                q: "Situation: 'Mein Problem'",
+                options: ["Мой проблема", "Моя проблема", "Моё проблема"],
+                correct: "Моя проблема",
+                expl: "Wörter auf -а wie 'проблема' sind im Russischen weiblich."
+            },
+            target: {
+                q: "Situation: 'Mein Ziel'",
+                options: ["Мой цель", "Моя цель", "Моё цель"],
+                correct: "Моя цель",
+                expl: "'Цель' (Ziel) ist im Russischen immer weiblich."
+            },
+            luck: {
+                q: "Situation: 'Ich hatte Glück'",
+                options: ["Мне было повезло", "Мне повезло", "Я повезло"],
+                correct: "Мне повезло",
+                expl: "In der Wendung 'Glück haben' wird kein Hilfsverb 'sein' verwendet."
+            },
+            bus: {
+                q: "Situation: 'Ich bin im Bus' (Standort)",
+                options: ["Я на автобусе", "Я в автобусе", "Я у автобуса"],
+                correct: "Я в автобусе",
+                expl: "Für den Standort im Fahrzeug nutzen wir die Präposition 'в'."
+            },
+            list: {
+                q: "Situation: 'und so weiter'",
+                options: ["и так дальше", "и так далее", "и дальше"],
+                correct: "и так далее",
+                expl: "Die feste Redewendung für 'und so weiter' lautet 'и так далее'."
+            }
+        };
+
+        let currentId = null;
+        const userResults = {}; // Speichert, ob eine Aufgabe gelöst wurde
+
+        function openExercise(id) {
+            currentId = id;
+            const ex = exercises[id];
+            const select = document.getElementById('answer-select');
+            const feedback = document.getElementById('feedback-label');
+            const question = document.getElementById('question-label');
+
+            question.innerText = ex.q;
+            feedback.innerText = "";
+            select.className = "";
+            
+            // Optionen füllen
+            select.innerHTML = '<option value="" disabled selected>Wähle eine Antwort...</option>';
+            ex.options.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.innerText = opt;
+                select.appendChild(o);
+            });
+
+            // Falls bereits gelöst, Zustand wiederherstellen
+            if (userResults[id]) {
+                select.value = userResults[id].val;
+                select.className = userResults[id].isRight ? "correct" : "wrong";
+                feedback.innerText = userResults[id].isRight ? "Richtig! ✓ " + ex.expl : "Falsch. ✕ " + ex.expl;
+            }
+
+            document.getElementById('exercise-modal').style.display = 'flex';
+        }
+
+        function checkSelection() {
+            const select = document.getElementById('answer-select');
+            const feedback = document.getElementById('feedback-label');
+            const ex = exercises[currentId];
+            const val = select.value;
+            const isRight = (val === ex.correct);
+
+            select.className = isRight ? "correct" : "wrong";
+            feedback.innerText = isRight ? "Richtig! ✓ " + ex.expl : "Nicht ganz... ✕ " + ex.expl;
+            feedback.style.color = isRight ? "var(--success-green)" : "var(--error-red)";
+
+            // Ergebnis speichern
+            userResults[currentId] = { val: val, isRight: isRight };
+
+            // Hotspot im Büro markieren
+            const hotspot = document.getElementById('obj-' + currentId);
+            hotspot.querySelector('.pulse-ring').style.borderColor = isRight ? "var(--success-green)" : "var(--error-red)";
+        }
+
+        function closeExercise() {
+            document.getElementById('exercise-modal').style.display = 'none';
+        }
+
+        function restart() {
+            Object.keys(userResults).forEach(key => delete userResults[key]);
+            document.querySelectorAll('.pulse-ring').forEach(ring => {
+                ring.style.borderColor = "var(--primary-blue)";
+            });
+            alert("Übung wurde zurückgesetzt.");
+        }
+
+        function showAllSolutions() {
+            Object.keys(exercises).forEach(id => {
+                userResults[id] = { val: exercises[id].correct, isRight: true };
+                const hotspot = document.getElementById('obj-' + id);
+                hotspot.querySelector('.pulse-ring').style.borderColor = "var(--success-green)";
+            });
+            alert("Alle korrekten Lösungen wurden markiert. Klicke auf die Objekte, um sie zu sehen.");
+        }
+    </script>
+</body>
+</html>
