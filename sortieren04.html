@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Quiz: Dialog sortieren</title>
+    <style>
+        :root {
+            --primary-color: #3f51b5;
+            --secondary-color: #e8eaf6;
+            --selection-color: #ffd54f;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --solution-color: #009688;
+            --bg-color: #f4f7f9;
+            --text-dark: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 5px solid var(--primary-color);
+            font-size: 0.95rem;
+            max-width: 600px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .dialog-list {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .sentence-item {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.2s ease;
+            user-select: none;
+            position: relative;
+        }
+
+        /* Highlight für den ersten Klick */
+        .sentence-item.selected {
+            border-color: var(--selection-color);
+            background-color: #fff9c4;
+            transform: scale(1.02);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+
+        /* Highlight für die Lösung */
+        .sentence-item.is-solution {
+            border-color: var(--success-color);
+            background-color: #e8f5e9;
+        }
+
+        .number-badge {
+            background: var(--primary-color);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 600px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            color: white;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-check { background-color: var(--success-color); }
+        .btn-restart { background-color: var(--primary-color); }
+        .btn-solution { background-color: var(--solution-color); }
+
+        /* Feedback Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .feedback-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .explanation {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin: 20px 0;
+            color: #444;
+            text-align: left;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .close-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        @media (max-width: 500px) {
+            .sentence-item { font-size: 0.95rem; padding: 12px; }
+            .header h1 { font-size: 1.3rem; }
+            .controls { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Dialog-Puzzle</h1>
+        <p>Bringe den Dialog in die richtige Reihenfolge.</p>
+    </div>
+
+    <div class="instructions">
+        <b>So geht's:</b> Klicke einen Satz an, um ihn auszuwählen. Klicke dann einen zweiten Satz an, um die Plätze zu tauschen. 
+    </div>
+
+    <div class="dialog-list" id="dialog-list">
+        <!-- Sätze werden hier eingefügt -->
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-restart" onclick="restartGame()">Neustart</button>
+        <button class="btn btn-solution" onclick="showSolution()">Lösung</button>
+        <button class="btn btn-check" onclick="checkOrder()">Prüfen</button>
+    </div>
+
+    <div id="overlay" class="overlay">
+        <div class="feedback-box">
+            <h3 id="feedback-title">Ergebnis</h3>
+            <div class="explanation" id="explanation-text"></div>
+            <button class="close-btn" onclick="closeOverlay()">Weiter</button>
+        </div>
+    </div>
+
+    <script>
+        const correctDialogue = [
+            { id: 0, text: "Привет! Ты любишь смотреть кино?" },
+            { id: 1, text: "Да, я очень люблю смотреть кино." },
+            { id: 2, text: "Я люблю мелодрамы, и также я люблю ужастики." },
+            { id: 3, text: "О, моя подруга тоже очень любит мелодрамы." },
+            { id: 4, text: "Круто! Мы можем посмотреть что-нибудь вместе." }
+        ];
+
+        let currentData = [];
+        let selectedIndex = null;
+        let isSolved = false;
+
+        function init() {
+            isSolved = false;
+            selectedIndex = null;
+            // Kopieren und mischen
+            currentData = [...correctDialogue].sort(() => Math.random() - 0.5);
+            renderList();
+        }
+
+        function renderList() {
+            const list = document.getElementById('dialog-list');
+            list.innerHTML = '';
+            
+            currentData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'sentence-item';
+                if (selectedIndex === index) div.classList.add('selected');
+                if (isSolved) div.classList.add('is-solution');
+                
+                div.innerHTML = `
+                    <div class="number-badge">${index + 1}</div>
+                    <div class="text-content">${item.text}</div>
+                `;
+                
+                div.onclick = () => handleItemClick(index);
+                list.appendChild(div);
+            });
+        }
+
+        function handleItemClick(index) {
+            if (isSolved) return; // Wenn Lösung angezeigt wird, keine Interaktion mehr
+
+            if (selectedIndex === null) {
+                selectedIndex = index;
+            } else if (selectedIndex === index) {
+                selectedIndex = null;
+            } else {
+                // Tauschen
+                const temp = currentData[selectedIndex];
+                currentData[selectedIndex] = currentData[index];
+                currentData[index] = temp;
+                selectedIndex = null;
+            }
+            renderList();
+        }
+
+        function showSolution() {
+            isSolved = true;
+            selectedIndex = null;
+            currentData = [...correctDialogue];
+            renderList();
+        }
+
+        function checkOrder() {
+            let correctCount = 0;
+            for (let i = 0; i < correctDialogue.length; i++) {
+                if (currentData[i].id === correctDialogue[i].id) {
+                    correctCount++;
+                }
+            }
+
+            const isAllCorrect = (correctCount === correctDialogue.length);
+            const title = document.getElementById('feedback-title');
+            const expl = document.getElementById('explanation-text');
+            
+            if (isAllCorrect) {
+                title.innerText = "Hervorragend! ✓";
+                title.style.color = "var(--success-color)";
+                expl.innerHTML = "Der Dialog ist perfekt sortiert!<br><br><b>Warum „также“ in Satz 3?</b> Weil eine Person zwei Vorlieben über sich selbst aufzählt.<br><br><b>Warum „тоже“ in Satz 4?</b> Weil die Vorliebe der Freundin mit der Vorliebe der anderen Person verglichen wird.";
+            } else {
+                title.innerText = "Noch nicht ganz... ✕";
+                title.style.color = "var(--error-color)";
+                expl.innerHTML = `Du hast ${correctCount} von ${correctDialogue.length} Sätzen an der richtigen Stelle.<br><br>Überprüfe die Logik:<br>1. Erst die Frage, dann die Antwort.<br>2. Aufzählung eigener Vorlieben -> <b>также</b>.<br>3. Vergleich mit anderen -> <b>тоже</b>.`;
+            }
+            
+            document.getElementById('overlay').style.display = 'flex';
+        }
+
+        function closeOverlay() {
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function restartGame() {
+            init();
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
